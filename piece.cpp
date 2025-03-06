@@ -6,11 +6,6 @@ Piece::Piece(const sf::Texture& texture, float x, float y, Type type, Color colo
     sprite.setPosition({x, y});
 }
 
-bool Piece::canMove(int startRow, int startCol, int endRow, int endCol, const std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board)
-{
-    return true;
-};
-
 void Piece::draw(sf::RenderWindow& window)
 {
     window.draw(sprite);
@@ -46,9 +41,4 @@ void Piece::setScaleFactor(float scaleFactor)
 {
     this->scaleFactor = scaleFactor;
     sprite.setScale({scaleFactor, scaleFactor}); 
-}
-
-void Piece::setHasMoved(bool moved) 
-{
-    
 }

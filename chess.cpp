@@ -2,6 +2,7 @@
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Window.hpp>
 
+#include <iostream>
 #include <map>
 #include <string>
 #include "board.hpp"
@@ -81,12 +82,19 @@ int main()
                     board.handleMouseRelease(sf::Mouse::getPosition(window), newPosX, newPosY);
             }
         }
+        
+        sf::Vector2i whiteKingPos = board.findWhiteKingPosition(board.board);
+        sf::Vector2i blackKingPos = board.findBlackKingPosition(board.board);
 
         window.clear(sf::Color(128,128,128));
 
         window.draw(boardSprite);
 
         board.draw(window, newPosX, newPosY, newHeight);
+
+        board.isWhiteKingInCheck(board.board);
+
+        board.isBlackKingInCheck(board.board);
 
         window.display();
     }

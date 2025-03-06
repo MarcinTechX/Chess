@@ -121,10 +121,75 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
         {
             if (selectedPiece->getType() == Piece::Type::Pawn) {
                 auto pawn = dynamic_cast<Pawn*>(selectedPiece.get());
-                if (pawn && pawn->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board)) 
+                if (pawn && pawn->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board, rounds, roundEnPassant)) 
                 {
                     board[newRow][newCol] = std::move(selectedPiece);
                     pawn->setHasMoved(true); 
+                    isMoveCorrect = true;
+                }
+                else 
+                {
+                    board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+                }
+            }
+            else if (selectedPiece->getType() == Piece::Type::Bishop)
+            {
+                auto bishop = dynamic_cast<Bishop*>(selectedPiece.get());
+                if (bishop && bishop->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board)) 
+                {
+                    board[newRow][newCol] = std::move(selectedPiece);
+                    isMoveCorrect = true;
+                }
+                else 
+                {
+                    board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+                }
+            }
+            else if (selectedPiece->getType() == Piece::Type::King)
+            {
+                auto king = dynamic_cast<King*>(selectedPiece.get());
+                if (king && king->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board)) 
+                {
+                    board[newRow][newCol] = std::move(selectedPiece);
+                    isMoveCorrect = true;
+                }
+                else 
+                {
+                    board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+                }
+            }
+            else if (selectedPiece->getType() == Piece::Type::Rook)
+            {
+                auto rook = dynamic_cast<Rook*>(selectedPiece.get());
+                if (rook && rook->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board)) 
+                {
+                    board[newRow][newCol] = std::move(selectedPiece);
+                    isMoveCorrect = true;
+                }
+                else 
+                {
+                    board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+                }
+            }
+            else if (selectedPiece->getType() == Piece::Type::Queen)
+            {
+                auto queen = dynamic_cast<Queen*>(selectedPiece.get());
+                if (queen && queen->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board)) 
+                {
+                    board[newRow][newCol] = std::move(selectedPiece);
+                    isMoveCorrect = true;
+                }
+                else 
+                {
+                    board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+                }
+            }
+            else if (selectedPiece->getType() == Piece::Type::Knight)
+            {
+                auto knight = dynamic_cast<Knight*>(selectedPiece.get());
+                if (knight && knight->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, board)) 
+                {
+                    board[newRow][newCol] = std::move(selectedPiece);
                     isMoveCorrect = true;
                 }
                 else 
@@ -144,6 +209,179 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
             isWhiteTurn = !isWhiteTurn;
         }
     }
+
+    rounds++;
 }
+
+bool Board::isWhiteKingInCheck(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+{
+    sf::Vector2i kingPos = findWhiteKingPosition(board);
+
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
+            std::unique_ptr<Piece>& piece = board[row][col];
+            if (piece && piece->getColor() != Piece::Color::White)
+            {
+                if (piece->getType() == Piece::Type::Pawn) 
+                {
+                    auto pawn = dynamic_cast<Pawn*>(piece.get());
+                    if (pawn && pawn->canMove(row, col, kingPos.y, kingPos.x, board, rounds, roundEnPassant)) 
+                    {   
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Bishop)
+                {
+                    auto bishop = dynamic_cast<Bishop*>(piece.get());
+                    if (bishop && bishop->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {   
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Rook)
+                {
+                    auto rook = dynamic_cast<Rook*>(piece.get());
+                    if (rook && rook->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Queen)
+                {
+                    auto queen = dynamic_cast<Queen*>(piece.get());
+                    if (queen && queen->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Knight)
+                {
+                    auto knight = dynamic_cast<Knight*>(piece.get());
+                    if (knight && knight->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "white not check" << std::endl;
+    return false; 
+}
+
+bool Board::isBlackKingInCheck(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+{
+    sf::Vector2i kingPos = findBlackKingPosition(board);
+
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
+            std::unique_ptr<Piece>& piece = board[row][col];
+            if (piece && piece->getColor() != Piece::Color::Black)
+            {
+                if (piece->getType() == Piece::Type::Pawn) 
+                {
+                    auto pawn = dynamic_cast<Pawn*>(piece.get());
+                    if (pawn && pawn->canMove(row, col, kingPos.y, kingPos.x, board, rounds, roundEnPassant)) 
+                    {   
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Bishop)
+                {
+                    auto bishop = dynamic_cast<Bishop*>(piece.get());
+                    if (bishop && bishop->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {   
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Rook)
+                {
+                    auto rook = dynamic_cast<Rook*>(piece.get());
+                    if (rook && rook->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Queen)
+                {
+                    auto queen = dynamic_cast<Queen*>(piece.get());
+                    if (queen && queen->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {   
+                        return true;
+                    }
+                }
+                else if (piece->getType() == Piece::Type::Knight)
+                {
+                    auto knight = dynamic_cast<Knight*>(piece.get());
+                    if (knight && knight->canMove(row, col, kingPos.y, kingPos.x, board)) 
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "Black not check" << std::endl;
+    return false; 
+}
+
+sf::Vector2i Board::findWhiteKingPosition(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+{
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
+            std::unique_ptr<Piece>& piece = board[row][col];
+            if (piece && piece->getType() == Piece::Type::King && piece->getColor() == Piece::Color::White) 
+            {
+                return sf::Vector2i(col, row); 
+            }
+        }
+    }
+    return sf::Vector2i(-1, -1);
+}
+
+sf::Vector2i Board::findBlackKingPosition(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+{
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
+            std::unique_ptr<Piece>& piece = board[row][col];
+            if (piece && piece->getType() == Piece::Type::King && piece->getColor() == Piece::Color::Black) 
+            {
+                return sf::Vector2i(col, row); 
+            }
+        }
+    }
+    return sf::Vector2i(-1, -1);
+}
+
+void Board::drawKingCheckBoundary(sf::RenderWindow& window, const sf::Vector2i& kingPos, float newPosX, float newPosY, float newHeight)
+{
+    if (kingPos.x != -1 && kingPos.y != -1) {  
+        float squareSize = newHeight / 8.0f;
+        
+        float posX = newPosX + kingPos.x * squareSize;
+        float posY = newPosY + kingPos.y * squareSize;
+        
+        sf::RectangleShape border(sf::Vector2f(squareSize, squareSize));
+        border.setPosition({posX, posY});
+        border.setOutlineColor(sf::Color::Red); 
+        border.setOutlineThickness(5);  
+        border.setFillColor(sf::Color::Transparent);  
+
+        window.draw(border);
+    }
+}
+
+
+
+
+
 
 

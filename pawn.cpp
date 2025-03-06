@@ -1,12 +1,18 @@
 #include "pawn.hpp"
 #include "board.hpp"
 
-#include <iostream>
-
 Pawn::Pawn(const sf::Texture& texture, float x, float y, Color color)
-    : Piece(texture, x, y, Type::Pawn, color), hasMoved(false), movesCount(0) {}
+    : Piece(texture, x, y, Type::Pawn, color), hasMoved(false), movesCount(0) {};
 
-bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol, 
+    std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+{
+    unsigned int dummyRounds = 0;
+    unsigned int dummyRoundEnPassant = 0;
+    return canMove(startRow, startCol, endRow, endCol, board, dummyRounds, dummyRoundEnPassant);
+}
+
+bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board, unsigned int& rounds, unsigned int& roundEnPassant) 
 {
 
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
@@ -23,18 +29,9 @@ bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol, std::arra
 
     if (startCol == endCol) {
 
-        if (pieceColor == Color::White) 
+        if (board[endRow][endCol] != nullptr) 
         {
-            if (board[endRow][endCol] != nullptr) 
-            {
-                return false;  
-            }
-        } else 
-        {
-            if (board[endRow][endCol] != nullptr) 
-            {
-                return false; 
-            }
+            return false; 
         }
 
         if (!hasMoved) 
@@ -42,6 +39,7 @@ bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol, std::arra
             if (endRow == startRow + 2 * direction && board[startRow + direction][startCol] == nullptr) 
             {
                 movesCount++;
+                roundEnPassant = rounds;
                 return true;
             }
             if (endRow == startRow + direction) 
@@ -66,10 +64,12 @@ bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol, std::arra
             return true;
         }
 
+        //en passant
         if (board[startRow][endCol] && board[startRow][endCol]->getType() == Type::Pawn) 
         {
             auto opponentPawn = dynamic_cast<Pawn*>(board[startRow][endCol].get());
             if (opponentPawn && opponentPawn->getColor() != pieceColor &&
+                rounds == roundEnPassant + 1 &&
                 opponentPawn->movesCount == 1 &&
                 startRow == (opponentPawn->getColor() == Color::White ? 3 : 4) && 
                 board[endRow][endCol] == nullptr) 
