@@ -15,21 +15,26 @@ bool King::canMove(int startRow, int startCol, int endRow, int endCol, std::arra
     {
         return false;
     }
-
-    for (int i = -1; i <= 1; i++)
+    
+    for (int i = -1; i <= 1; i++) 
     {
-        for (int j = -1; j <= 1; j++)
+        for (int j = -1; j <= 1; j++) 
         {
             int neighborRow = endRow + i;
             int neighborCol = endCol + j;
-
-            if (board[neighborRow][neighborCol] && board[neighborRow][neighborCol]->getType() == Type::King && board[neighborRow][neighborCol]->getColor() != pieceColor)
+    
+            if (neighborRow >= 0 && neighborRow < 8 && neighborCol >= 0 && neighborCol < 8) 
             {
-                return false;
+                if (board[neighborRow][neighborCol] && 
+                    board[neighborRow][neighborCol]->getType() == Type::King && 
+                    board[neighborRow][neighborCol]->getColor() != pieceColor) 
+                {
+                    return false;
+                }
             }
         }
     }
-
+    
     if (abs(endRow - startRow) <= 1 && abs(endCol - startCol) <= 1 && (!(abs(endRow - startRow) == 0 && abs(endCol - startCol) == 0)))
     {
         return true;
