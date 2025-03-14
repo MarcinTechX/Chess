@@ -6,6 +6,13 @@
 #include <map>
 #include <string>
 #include "board.hpp"
+#include "piece.hpp"
+#include "pawn.hpp"
+#include "king.hpp"
+#include "queen.hpp"
+#include "bishop.hpp"
+#include "knight.hpp"
+#include "rook.hpp"
 
 int main()
 {
@@ -17,7 +24,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode({screenWidth, screenHeight}), "Chess", sf::Style::Default, sf::State::Fullscreen);
 
     sf::Texture boardTexture;
-
+    
     if (!boardTexture.loadFromFile("Images/board.png")) 
     {
         return -1;
@@ -52,50 +59,57 @@ int main()
         !textures["black-queen"].loadFromFile("Images/black-queen.png") ||
         !textures["black-rook"].loadFromFile("Images/black-rook.png") ||
         !textures["black-bishop"].loadFromFile("Images/black-bishop.png") ||
-        !textures["black-knight"].loadFromFile("Images/black-knight.png") 
-    ) {
+        !textures["black-knight"].loadFromFile("Images/black-knight.png")) 
+    {
         return -1;
     }
 
-    Board board(newHeight);
-    board.setupBoard(textures);
+    Board board(newHeight);  
+    Board& boardRef = board;  
+
+    boardRef.setupBoard(textures);
 
     while (window.isOpen()) 
     {
-        while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) {
+        while (const std::optional event = window.pollEvent()) 
+        {
+            if (event->is<sf::Event::Closed>()) 
+            {
                 window.close();
             }
-            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) 
+            {
                 if (keyPressed->scancode == sf::Keyboard::Scancode::Escape)
+                {
                     window.close();
+                }
             }
-            else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+            else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) 
+            {
                 if (mousePressed->button == sf::Mouse::Button::Left)
-                    board.handleMouseClick(sf::Mouse::getPosition(window));
+                {
+                    boardRef.handleMouseClick(sf::Mouse::getPosition(window));
+                }
             }
-            else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
-                board.handleMouseMove(sf::Mouse::getPosition(window));
+            else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) 
+            {
+                boardRef.handleMouseMove(sf::Mouse::getPosition(window));
             }
-            else if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>()) {
+            else if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>()) 
+            {
                 if (mouseReleased->button == sf::Mouse::Button::Left)
-                    board.handleMouseRelease(sf::Mouse::getPosition(window), newPosX, newPosY);
+                {
+                    boardRef.handleMouseRelease(sf::Mouse::getPosition(window), newPosX, newPosY);
+                }
             }
         }
-        
-        sf::Vector2i whiteKingPos = board.findWhiteKingPosition(board.board);
-        sf::Vector2i blackKingPos = board.findBlackKingPosition(board.board);
 
         window.clear(sf::Color(128,128,128));
 
         window.draw(boardSprite);
 
-        board.draw(window, newPosX, newPosY, newHeight);
+        boardRef.draw(window, newPosX, newPosY, newHeight);
 
-        board.isWhiteKingInCheck(board.board);
-
-        board.isBlackKingInCheck(board.board);
-
-        window.display();
+        window.display(); 
     }
 }

@@ -6,7 +6,6 @@
 #include <memory>
 #include <map>
 #include <array>
-
 #include "piece.hpp"
 #include "pawn.hpp"
 #include "rook.hpp"
@@ -18,23 +17,23 @@
 class Board 
 {
 public:
+    Board ();
     explicit Board(float newHeight);
+    ~Board();
     void setupBoard(const std::map<std::string, sf::Texture>& textures);
     void setScaleForAllPieces(float newHeight);
     void draw(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight);
     void handleMouseClick(const sf::Vector2i& mousePos);
     void handleMouseMove(const sf::Vector2i& mousePos);
     void handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, float newPosY);
-    
-    sf::Vector2i findWhiteKingPosition(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board);
-    sf::Vector2i findBlackKingPosition(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board);
-    bool isWhiteKingInCheck(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board); 
-    bool isBlackKingInCheck(std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board); 
+    bool isKingInCheck(int row, int col, Piece::Color kingColor); 
+    bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
+    std::pair<std::pair<sf::Vector2i, Piece::Color>, std::pair<sf::Vector2i, Piece::Color>> getKingsPositions(); 
 
-    void drawKingCheckBoundary(sf::RenderWindow& window, const sf::Vector2i& kingPos, float newPosX, float newPosY, float newHeight);
+    //void drawKingCheckBoundary(sf::RenderWindow& window, const sf::Vector2i& kingPos, float newPosX, float newPosY, float newHeight);
 
     bool isWhiteTurn = true;
-    unsigned int rounds = 1;
+    unsigned int rounds = 0;
     unsigned int roundEnPassant = 0;
     bool whiteKingChecked = false;
     bool blackKingChecked = false;

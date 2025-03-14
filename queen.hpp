@@ -2,13 +2,16 @@
 #define QUEEN_HPP
 
 #include "piece.hpp"
+#include "board.hpp"
+
+class Board;
 
 class Queen : public Piece 
 {
 public:
-    Queen(const sf::Texture& texture, float x, float y, Color color);
+    Queen(const sf::Texture& texture, float x, float y, Color color, Board& boardGame);
 
-    bool canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) override; 
+    bool canMove(int startRow, int startCol, int endRow, int endCol) override; 
 };
 
 #endif 

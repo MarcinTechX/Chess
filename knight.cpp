@@ -1,17 +1,20 @@
 #include "knight.hpp"
 #include "board.hpp"
 
-Knight::Knight(const sf::Texture& texture, float x, float y, Color color)
-    : Piece(texture, x, y, Type::Knight, color) {}
+Knight::Knight(const sf::Texture& texture, float x, float y, Color color, Board& boardGame)
+    : Piece(texture, x, y, Type::Knight, color, boardGame) 
+    {
 
-bool Knight::canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+    }
+
+bool Knight::canMove(int startRow, int startCol, int endRow, int endCol) 
 {
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
     {
         return false;
     }
 
-    if (board[endRow][endCol] && board[endRow][endCol]->getColor() == pieceColor) 
+    if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {
         return false;
     }

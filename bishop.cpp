@@ -1,19 +1,27 @@
 #include "bishop.hpp"
 #include "board.hpp"
 
-Bishop::Bishop(const sf::Texture& texture, float x, float y, Color color)
-    : Piece(texture, x, y, Type::Bishop, color) {}
+#include <iostream>
 
-bool Bishop::canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+Bishop::Bishop(const sf::Texture& texture, float x, float y, Color color, Board& boardGame)
+    : Piece(texture, x, y, Type::Bishop, color, boardGame) 
+    {
+        this->boardGame = &boardGame;
+    }
+
+bool Bishop::canMove(int startRow, int startCol, int endRow, int endCol)
 {
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
-    {
+    {      
         return false;
     }
 
-    if (board[endRow][endCol] && board[endRow][endCol]->getColor() == pieceColor) 
-    {
-        return false;
+    if (boardGame->board[endRow][endCol] != nullptr) 
+    {    
+        if (boardGame->board[endRow][endCol]->getColor() == pieceColor) 
+        {
+            return false;
+        }
     }
 
     if (abs(endRow - startRow) == abs(endCol - startCol))
@@ -25,7 +33,7 @@ bool Bishop::canMove(int startRow, int startCol, int endRow, int endCol, std::ar
         int col = startCol + colDirection;
         while (row != endRow && col != endCol)
         {
-            if (board[row][col])
+            if (boardGame->board[row][col])
             {
                 return false;
             }

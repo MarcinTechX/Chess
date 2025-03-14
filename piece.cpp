@@ -1,9 +1,10 @@
 #include "piece.hpp"
 
-Piece::Piece(const sf::Texture& texture, float x, float y, Type type, Color color)
-    : sprite(texture), pieceType(type), pieceColor(color), scaleFactor(1.0f) 
+Piece::Piece(const sf::Texture& texture, float x, float y, Type type, Color color, Board& boardGame)
+    : sprite(texture), pieceType(type), pieceColor(color), scaleFactor(1.0f), movesCount(0) 
 {
     sprite.setPosition({x, y});
+    this->boardGame = &boardGame;
 }
 
 void Piece::draw(sf::RenderWindow& window)

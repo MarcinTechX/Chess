@@ -2,13 +2,16 @@
 #define ROOK_HPP
 
 #include "piece.hpp"
+#include "board.hpp"
+
+class Board;
 
 class Rook : public Piece 
 {
 public:
-    Rook(const sf::Texture& texture, float x, float y, Color color);
+    Rook(const sf::Texture& texture, float x, float y, Color color, Board& boardGame);
 
-    bool canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) override;
+    bool canMove(int startRow, int startCol, int endRow, int endCol) override;
 };
 
 #endif 

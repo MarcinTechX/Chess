@@ -3,24 +3,18 @@
 
 #include <SFML/Graphics.hpp>
 
+class Board;
+
 class Piece 
 {
 public:
     enum class Type { King, Queen, Rook, Bishop, Knight, Pawn };
     enum class Color { White, Black };
 
-    Piece(const sf::Texture& texture, float x, float y, Type type, Color color);
+    Piece(const sf::Texture& texture, float x, float y, Type type, Color color, Board& boardGame);
     virtual ~Piece() = default;
 
-    virtual bool canMove(int startRow, int startCol, int endRow, int endCol, 
-        std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) = 0;
-
-    virtual bool canMove(int startRow, int startCol, int endRow, int endCol, 
-        std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board, 
-    unsigned int& rounds, unsigned int& roundEnPassant) 
-    {
-        return false; 
-    }
+    virtual bool canMove(int startRow, int startCol, int endRow, int endCol) = 0;
 
     virtual void draw(sf::RenderWindow& window);
 
@@ -38,11 +32,14 @@ public:
     Color getColor() const;
     sf::Sprite& getSprite();
 
+    unsigned int movesCount;
+
 protected:
     sf::Sprite sprite;
     Type pieceType;
     Color pieceColor;
     float scaleFactor;
+    Board* boardGame;
 };
 
 #endif

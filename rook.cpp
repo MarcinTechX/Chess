@@ -1,17 +1,20 @@
 #include "rook.hpp"
 #include "board.hpp"
 
-Rook::Rook(const sf::Texture& texture, float x, float y, Color color)
-    : Piece(texture, x, y, Type::Rook, color) {}
+Rook::Rook(const sf::Texture& texture, float x, float y, Color color, Board& boardGame)
+    : Piece(texture, x, y, Type::Rook, color, boardGame)
+    {
 
-bool Rook::canMove(int startRow, int startCol, int endRow, int endCol, std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board) 
+    }
+
+bool Rook::canMove(int startRow, int startCol, int endRow, int endCol) 
 {
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
     {
         return false;
     }
 
-    if (board[endRow][endCol] && board[endRow][endCol]->getColor() == pieceColor) 
+    if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {
         return false;
     }
@@ -23,7 +26,7 @@ bool Rook::canMove(int startRow, int startCol, int endRow, int endCol, std::arra
 
         while (row != endRow)
         {
-            if (board[row][startCol])  
+            if (boardGame->board[row][startCol])  
             {
                 return false;
             }
@@ -39,7 +42,7 @@ bool Rook::canMove(int startRow, int startCol, int endRow, int endCol, std::arra
 
         while (col != endCol)
         {
-            if (board[startRow][col])  
+            if (boardGame->board[startRow][col])  
             {
                 return false;
             }
