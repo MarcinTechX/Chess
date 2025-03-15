@@ -9,7 +9,7 @@ Bishop::Bishop(const sf::Texture& texture, float x, float y, Color color, Board&
         this->boardGame = &boardGame;
     }
 
-bool Bishop::canMove(int startRow, int startCol, int endRow, int endCol)
+bool Bishop::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
 {
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
     {      

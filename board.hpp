@@ -29,8 +29,9 @@ public:
     bool isKingInCheck(int row, int col, Piece::Color kingColor); 
     bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
     std::pair<std::pair<sf::Vector2i, Piece::Color>, std::pair<sf::Vector2i, Piece::Color>> getKingsPositions(); 
-
-    //void drawKingCheckBoundary(sf::RenderWindow& window, const sf::Vector2i& kingPos, float newPosX, float newPosY, float newHeight);
+    void drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures);
+    std::string getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight);
+    void promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures);
 
     bool isWhiteTurn = true;
     unsigned int rounds = 0;
@@ -38,6 +39,9 @@ public:
     bool whiteKingChecked = false;
     bool blackKingChecked = false;
     std::array<std::array<std::unique_ptr<Piece>, 8>, 8> board;
+    sf::RectangleShape promotionWindow;
+    std::map<std::string, sf::Sprite> promotionSprites;
+    bool promotionActive = false;
 
 protected:
     std::vector<std::unique_ptr<Piece>> pieces;

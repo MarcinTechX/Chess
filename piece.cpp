@@ -1,5 +1,7 @@
 #include "piece.hpp"
 
+#include <iostream>
+
 Piece::Piece(const sf::Texture& texture, float x, float y, Type type, Color color, Board& boardGame)
     : sprite(texture), pieceType(type), pieceColor(color), scaleFactor(1.0f), movesCount(0) 
 {
@@ -42,4 +44,13 @@ void Piece::setScaleFactor(float scaleFactor)
 {
     this->scaleFactor = scaleFactor;
     sprite.setScale({scaleFactor, scaleFactor}); 
+}
+
+bool Piece::canMove(int startRow, int startCol, int endRow, int endCol) 
+{
+    if (canMoveImpl(startRow, startCol, endRow, endCol)) {
+        movesCount++;  
+        return true;
+    }
+    return false;
 }

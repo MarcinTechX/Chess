@@ -17,8 +17,10 @@
 
 Board::Board() 
 {
-    for (int row = 0; row < 8; row++) {
-        for (int col = 0; col < 8; col++) {
+    for (int row = 0; row < 8; row++)       
+    {
+        for (int col = 0; col < 8; col++) 
+        {
             board[row][col] = nullptr;
         }
     }
@@ -27,8 +29,10 @@ Board::Board()
 Board::Board(float newHeight)
     : newHeight(newHeight), isWhiteTurn(true) 
 {
-    for (int row = 0; row < 8; row++) {
-        for (int col = 0; col < 8; col++) {
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
             board[row][col] = nullptr;
         }
     }
@@ -41,9 +45,12 @@ Board::~Board()
 
 void Board::setScaleForAllPieces(float newHeight) 
 {
-    for (auto& row : board) {
-        for (auto& piece : row) {
-            if (piece) {  
+    for (auto& row : board) 
+    {
+        for (auto& piece : row) 
+        {
+            if (piece) 
+            {  
                 sf::FloatRect bounds = piece->getSprite().getGlobalBounds();
                 float scaleFactor = (newHeight / 8.0f) / bounds.size.x;
                 piece->getSprite().setScale({scaleFactor, scaleFactor});
@@ -89,9 +96,12 @@ void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY, float n
 {
     float offset = newHeight / 8.0f;
 
-    for (int row = 0; row < 8; row++) {
-        for (int col = 0; col < 8; col++) {
-            if (board[row][col] && board[row][col] != selectedPiece) {
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
+            if (board[row][col] && board[row][col] != selectedPiece) 
+            {
                 float posX = newPosX + col * offset;
                 float posY = newPosY + (7 - row) * offset;
                 board[row][col]->setPosition(posX, posY);
@@ -103,6 +113,95 @@ void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY, float n
     if (isDragging && selectedPiece) {
         selectedPiece->draw(window);
     }
+}
+
+void Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures) 
+{
+    sf::RectangleShape promotionWindow({newHeight / 4.0f, newHeight / 4.0f});
+    promotionWindow.setPosition({(screenWidth - promotionWindow.getSize().x) / 2.0f, (screenHeight - promotionWindow.getSize().y) / 2.0f});
+    window.draw(promotionWindow);
+
+    std::string colorPrefix = isWhiteTurn ? "black-" : "white-";
+    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
+
+    std::vector<std::pair<sf::Sprite, std::string>> sprites;
+
+    float iconSize = promotionWindow.getSize().x / 2.0f;
+
+    for (int i = 0; i < 4; i++) 
+    {
+        sf::Sprite sprite(textures[colorPrefix + pieceNames[i]]);
+        sprite.setScale({iconSize / sprite.getLocalBounds().size.x, iconSize / sprite.getLocalBounds().size.y});
+        sprite.setPosition({promotionWindow.getPosition().x + (i % 2) * iconSize, promotionWindow.getPosition().y + (i / 2) * iconSize});
+        window.draw(sprite);
+    }
+}
+
+std::string Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight)
+{
+    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
+    
+    float iconSize = newHeight / 8.0f; 
+    int row = (mousePos.y - newPosY) / iconSize;   
+    int col = (mousePos.x - newPosX) / iconSize;   
+
+    if (row < 5 && row > 2 && col < 5 && col > 2)
+    {
+        return pieceNames[(row - 3) * 2 + (col - 3)]; 
+    }
+
+    return ""; 
+}
+
+void Board::promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures)
+{
+    Piece::Color color = isWhiteTurn ? Piece::Color::Black : Piece::Color::White;
+
+    int row = (color == Piece::Color::White) ? 7 : 0;  
+    int col = -1;
+
+    for (int i = 0; i < 8; i++) 
+    {
+        if (dynamic_cast<Pawn*>(board[row][i].get())) 
+        {
+            col = i;
+            break;
+        }
+    }
+
+    if (col == -1)
+    {
+        return;
+    }
+
+    std::unique_ptr<Piece> newPiece;
+
+    if (promotionPiece == "queen") 
+    {
+        newPiece = std::make_unique<Queen>(textures.at((color == Piece::Color::White) ? "white-queen" : "black-queen"), col, row, color, *this);
+    }
+    else if (promotionPiece == "rook") 
+    {
+        newPiece = std::make_unique<Rook>(textures.at((color == Piece::Color::White) ? "white-rook" : "black-rook"), col, row, color, *this);
+    }
+    else if (promotionPiece == "knight") 
+    {
+        newPiece = std::make_unique<Knight>(textures.at((color == Piece::Color::White) ? "white-knight" : "black-knight"), col, row, color, *this);
+    }
+    else if (promotionPiece == "bishop") 
+    {
+        newPiece = std::make_unique<Bishop>(textures.at((color == Piece::Color::White) ? "white-bishop" : "black-bishop"), col, row, color, *this);
+    }
+
+    if (newPiece)
+    {
+        sf::FloatRect bounds = newPiece->getSprite().getGlobalBounds();
+        float scaleFactor = (newHeight / 8.0f) / bounds.size.x;
+        newPiece->getSprite().setScale({scaleFactor, scaleFactor});
+        board[row][col] = std::move(newPiece);
+    }
+
+    promotionActive = false;
 }
 
 void Board::handleMouseClick(const sf::Vector2i& mousePos) 
@@ -150,19 +249,19 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
     if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
         if (selectedPiece->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol)) 
-        {   
+        {  
+            tempPiece = std::move(board[newRow][newCol]);
+            board[newRow][newCol] = std::move(selectedPiece);
+
             auto kingsPositions = getKingsPositions();
             sf::Vector2i whiteKingPos = kingsPositions.first.first;
             Piece::Color whiteKingColor = kingsPositions.first.second;
-
+        
             sf::Vector2i blackKingPos = kingsPositions.second.first;
             Piece::Color blackKingColor = kingsPositions.second.second;
 
             bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, whiteKingColor);
             bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, blackKingColor);
-
-            tempPiece = std::move(board[newRow][newCol]);
-            board[newRow][newCol] = std::move(selectedPiece);
 
             if ((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked)) 
             {
@@ -175,7 +274,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
             }
         }
     }
-
+    
     if (!isMoveCorrect) 
     {
         if (selectedPiece) 
@@ -183,6 +282,15 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
             board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
         }
     }
+
+    if (board[newRow][newCol] && board[newRow][newCol]->getType() == Piece::Type::Pawn)
+    {
+        if ((board[newRow][newCol]->getColor() == Piece::Color::White && newRow == 7) || 
+            (board[newRow][newCol]->getColor() == Piece::Color::Black && newRow == 0))
+        {
+            promotionActive = true;
+        }
+    }    
 
     selectedPiece.reset();
     isDragging = false;
@@ -279,27 +387,6 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
 
     return true;
 }
-
-/*
-void Board::drawKingCheckBoundary(sf::RenderWindow& window, const sf::Vector2i& kingPos, float newPosX, float newPosY, float newHeight)
-{
-    if (kingPos.x != -1 && kingPos.y != -1) {  
-        float squareSize = newHeight / 8.0f;
-        
-        float posX = newPosX + kingPos.x * squareSize;
-        float posY = newPosY + kingPos.y * squareSize;
-        
-        sf::RectangleShape border(sf::Vector2f(squareSize, squareSize));
-        border.setPosition({posX, posY});
-        border.setOutlineColor(sf::Color::Red); 
-        border.setOutlineThickness(5);  
-        border.setFillColor(sf::Color::Transparent);  
-
-        window.draw(border);
-    }
-}
-*/
-
 
 
 

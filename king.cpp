@@ -9,7 +9,7 @@ King::King(const sf::Texture& texture, float x, float y, Color color, Board& boa
 
     }
 
-bool King::canMove(int startRow, int startCol, int endRow, int endCol) 
+bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
 {  
     auto king = dynamic_cast<King*>(boardGame->board[startRow][startCol].get());
     
@@ -64,7 +64,6 @@ bool King::canMove(int startRow, int startCol, int endRow, int endCol)
     
     if (abs(endRow - startRow) <= 1 && abs(endCol - startCol) <= 1 && (!(abs(endRow - startRow) == 0 && abs(endCol - startCol) == 0)))
     {
-        movesCount++;
         return true;
     }
 

@@ -7,7 +7,7 @@ Rook::Rook(const sf::Texture& texture, float x, float y, Color color, Board& boa
 
     }
 
-bool Rook::canMove(int startRow, int startCol, int endRow, int endCol) 
+bool Rook::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
 {
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
     {

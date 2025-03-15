@@ -64,13 +64,31 @@ int main()
         return -1;
     }
 
+    sf::RectangleShape promotionWindow({2*newHeight/8.0f, 2*newHeight/8.0f});
+    float promotionWindowHeight = promotionWindow.getSize().y;
+    float promotionWindowWidth = promotionWindow.getSize().x;
+    float newPosPromotionWindowX = (screenWidth - promotionWindowWidth) / 2.0f;
+    float newPosPromotionWindowY = (screenHeight - promotionWindowHeight) / 2.0f;
+    promotionWindow.setPosition({newPosPromotionWindowX, newPosPromotionWindowY});
+
     Board board(newHeight);  
     Board& boardRef = board;  
 
     boardRef.setupBoard(textures);
 
+    Piece::Color promotionColor = boardRef.isWhiteTurn ? Piece::Color::White : Piece::Color::Black;
+
+    sf::Sprite whiteQueenSprite(textures["white-queen"]);
+
+    float iconSize = promotionWindow.getSize().x /2.0f; 
+    whiteQueenSprite.setScale({iconSize / whiteQueenSprite.getLocalBounds().size.x, iconSize / whiteQueenSprite.getLocalBounds().size.y});
+
+    whiteQueenSprite.setPosition({newPosPromotionWindowX, newPosPromotionWindowY});
+
+    std::map<std::string, sf::Sprite> promotionSprites;
+
     while (window.isOpen()) 
-    {
+    { 
         while (const std::optional event = window.pollEvent()) 
         {
             if (event->is<sf::Event::Closed>()) 
@@ -88,7 +106,24 @@ int main()
             {
                 if (mousePressed->button == sf::Mouse::Button::Left)
                 {
-                    boardRef.handleMouseClick(sf::Mouse::getPosition(window));
+                    if (!boardRef.promotionActive)
+                    {
+                        boardRef.handleMouseClick(sf::Mouse::getPosition(window));
+                    }
+                    else
+                    {
+                        std::string promotionPiece;
+                        do 
+                        {
+                            promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window), newPosX, newPosY, newHeight);
+                            sf::sleep(sf::milliseconds(10));
+
+                        } while (promotionPiece.empty()); 
+
+                        boardRef.promotePawn(promotionPiece, textures);
+
+                        boardRef.promotionActive = false;
+                    }
                 }
             }
             else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) 
@@ -98,8 +133,11 @@ int main()
             else if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>()) 
             {
                 if (mouseReleased->button == sf::Mouse::Button::Left)
-                {
-                    boardRef.handleMouseRelease(sf::Mouse::getPosition(window), newPosX, newPosY);
+                {   
+                    if(!boardRef.promotionActive)
+                    {
+                        boardRef.handleMouseRelease(sf::Mouse::getPosition(window), newPosX, newPosY);
+                    }
                 }
             }
         }
@@ -109,6 +147,11 @@ int main()
         window.draw(boardSprite);
 
         boardRef.draw(window, newPosX, newPosY, newHeight);
+
+        if(boardRef.promotionActive)
+        {
+            boardRef.drawPromotionWindow(window, newPosX, newPosY, newHeight, screenWidth, screenHeight, textures);
+        }
 
         window.display(); 
     }

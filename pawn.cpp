@@ -9,8 +9,8 @@ Pawn::Pawn(const sf::Texture& texture, float x, float y, Color color, Board& boa
 
     };
 
-bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol) 
-{
+bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
+{   
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
     {
         return false;
@@ -34,19 +34,17 @@ bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol)
         {
             if (endRow == startRow + 2 * direction && boardGame->board[startRow + direction][startCol] == nullptr) 
             {
-                movesCount++;
                 boardGame->roundEnPassant = boardGame->rounds;
                 return true;
             }
             if (endRow == startRow + direction) 
             {   
-                movesCount++;
                 return true;
             }
-        } else {
+        } else 
+        {
             if (endRow == startRow + direction) 
             {
-                movesCount++;
                 return true;
             }
         }
@@ -56,7 +54,6 @@ bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol)
     {
         if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() != pieceColor) 
         {
-            movesCount++;
             return true;
         }
 
@@ -71,7 +68,6 @@ bool Pawn::canMove(int startRow, int startCol, int endRow, int endCol)
                 boardGame->board[endRow][endCol] == nullptr) 
             {
                 boardGame->board[startRow][endCol].reset();
-                movesCount++;
                 return true;
             }
         }
