@@ -25,7 +25,7 @@ int main()
 
     sf::Texture boardTexture;
     
-    if (!boardTexture.loadFromFile("Images/board.png")) 
+    if (!boardTexture.loadFromFile("Images/board/board.png")) 
     {
         return -1;
     }
@@ -48,20 +48,25 @@ int main()
 
     std::map<std::string, sf::Texture> textures;
 
-    if (!textures["white-king"].loadFromFile("Images/white-king.png") ||
-        !textures["white-pawn"].loadFromFile("Images/white-pawn.png") ||
-        !textures["white-queen"].loadFromFile("Images/white-queen.png") ||
-        !textures["white-rook"].loadFromFile("Images/white-rook.png") ||
-        !textures["white-bishop"].loadFromFile("Images/white-bishop.png") ||
-        !textures["white-knight"].loadFromFile("Images/white-knight.png") ||
-        !textures["black-king"].loadFromFile("Images/black-king.png") ||
-        !textures["black-pawn"].loadFromFile("Images/black-pawn.png") ||
-        !textures["black-queen"].loadFromFile("Images/black-queen.png") ||
-        !textures["black-rook"].loadFromFile("Images/black-rook.png") ||
-        !textures["black-bishop"].loadFromFile("Images/black-bishop.png") ||
-        !textures["black-knight"].loadFromFile("Images/black-knight.png")) 
+    if (!textures["white-king"].loadFromFile("Images/pieces/white-king.png") ||
+        !textures["white-pawn"].loadFromFile("Images/pieces/white-pawn.png") ||
+        !textures["white-queen"].loadFromFile("Images/pieces/white-queen.png") ||
+        !textures["white-rook"].loadFromFile("Images/pieces/white-rook.png") ||
+        !textures["white-bishop"].loadFromFile("Images/pieces/white-bishop.png") ||
+        !textures["white-knight"].loadFromFile("Images/pieces/white-knight.png") ||
+        !textures["black-king"].loadFromFile("Images/pieces/black-king.png") ||
+        !textures["black-pawn"].loadFromFile("Images/pieces/black-pawn.png") ||
+        !textures["black-queen"].loadFromFile("Images/pieces/black-queen.png") ||
+        !textures["black-rook"].loadFromFile("Images/pieces/black-rook.png") ||
+        !textures["black-bishop"].loadFromFile("Images/pieces/black-bishop.png") ||
+        !textures["black-knight"].loadFromFile("Images/pieces/black-knight.png")) 
     {
         return -1;
+    }
+
+    for (auto& texture : textures) 
+    {
+        texture.second.setSmooth(true);
     }
 
     sf::RectangleShape promotionWindow({2*newHeight/8.0f, 2*newHeight/8.0f});
