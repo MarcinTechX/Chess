@@ -20,7 +20,7 @@ To build and run the project, you need:
 
 ### Using g++ (Windows)
 ```sh
-g++ -o chess main.cpp -I"<SFML_path>/include" -L"<SFML_path>/lib" -lsfml-graphics -lsfml-window -lsfml-system
+g++ -o chess chess.cpp -I"<SFML_path>/include" -L"<SFML_path>/lib" -lsfml-graphics -lsfml-window -lsfml-system
 ```
 
 ## Controls
