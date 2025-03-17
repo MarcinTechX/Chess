@@ -81,15 +81,6 @@ int main()
 
     boardRef.setupBoard(textures);
 
-    Piece::Color promotionColor = boardRef.isWhiteTurn ? Piece::Color::White : Piece::Color::Black;
-
-    sf::Sprite whiteQueenSprite(textures["white-queen"]);
-
-    float iconSize = promotionWindow.getSize().x /2.0f; 
-    whiteQueenSprite.setScale({iconSize / whiteQueenSprite.getLocalBounds().size.x, iconSize / whiteQueenSprite.getLocalBounds().size.y});
-
-    whiteQueenSprite.setPosition({newPosPromotionWindowX, newPosPromotionWindowY});
-
     std::map<std::string, sf::Sprite> promotionSprites;
 
     while (window.isOpen()) 
