@@ -115,45 +115,7 @@ void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY, float n
     }
 }
 
-void Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures) 
-{
-    sf::RectangleShape promotionWindow({newHeight / 4.0f, newHeight / 4.0f});
-    promotionWindow.setPosition({(screenWidth - promotionWindow.getSize().x) / 2.0f, (screenHeight - promotionWindow.getSize().y) / 2.0f});
-    window.draw(promotionWindow);
-
-    std::string colorPrefix = isWhiteTurn ? "black-" : "white-";
-    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
-
-    std::vector<std::pair<sf::Sprite, std::string>> sprites;
-
-    float iconSize = promotionWindow.getSize().x / 2.0f;
-
-    for (int i = 0; i < 4; i++) 
-    {
-        sf::Sprite sprite(textures[colorPrefix + pieceNames[i]]);
-        sprite.setScale({iconSize / sprite.getLocalBounds().size.x, iconSize / sprite.getLocalBounds().size.y});
-        sprite.setPosition({promotionWindow.getPosition().x + (i % 2) * iconSize, promotionWindow.getPosition().y + (i / 2) * iconSize});
-        window.draw(sprite);
-    }
-}
-
-std::string Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight)
-{
-    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
-    
-    float iconSize = newHeight / 8.0f; 
-    int row = (mousePos.y - newPosY) / iconSize;   
-    int col = (mousePos.x - newPosX) / iconSize;   
-
-    if (row < 5 && row > 2 && col < 5 && col > 2)
-    {
-        return pieceNames[(row - 3) * 2 + (col - 3)]; 
-    }
-
-    return ""; 
-}
-
-void Board::promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures)
+std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
 {
     Piece::Color color = isWhiteTurn ? Piece::Color::Black : Piece::Color::White;
 
@@ -169,10 +131,98 @@ void Board::promotePawn(const std::string& promotionPiece, std::map<std::string,
         }
     }
 
-    if (col == -1)
+    return {color, row, col};
+}
+
+void Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures) 
+{
+    std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
+
+    Piece::Color color = std::get<0>(pawnPos);
+    int row = std::get<1>(pawnPos);
+    int col = std::get<2>(pawnPos);
+
+    sf::RectangleShape promotionWindow({newHeight / 8.0f, newHeight / 2.0f});
+    if (color == Piece::Color::White)
     {
-        return;
+        promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY + (7 - row) * newHeight / 8.0f});
     }
+    else
+    {
+        promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 7 + 3) * newHeight / 8.0f});
+    }
+    window.draw(promotionWindow);
+
+    std::string colorPrefix = isWhiteTurn ? "black-" : "white-";
+    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
+
+    std::vector<std::pair<sf::Sprite, std::string>> sprites;
+
+    float iconSize = promotionWindow.getSize().x;
+
+    for (int i = 0; i < 4; i++) 
+    {
+        sf::Sprite sprite(textures[colorPrefix + pieceNames[i]]);
+        sprite.setScale({iconSize / sprite.getLocalBounds().size.x, iconSize / sprite.getLocalBounds().size.y});
+        if (color == Piece::Color::White)
+        {
+            sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + i * iconSize});    
+        }
+        else
+        {
+            sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + (3 - i) * iconSize});
+        }
+        window.draw(sprite);
+    }
+}
+
+std::string Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight)
+{   
+    std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
+
+    Piece::Color color = std::get<0>(pawnPos);
+    int row = std::get<1>(pawnPos);
+    int col = std::get<2>(pawnPos);
+
+    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
+    
+    float iconSize = newHeight / 8.0f; 
+    int rowMouse = (mousePos.y - newPosY) / iconSize;   
+    int colMouse = (mousePos.x - newPosX) / iconSize;
+
+    if (colMouse == col)
+    {
+        if (color == Piece::Color::White)
+        {
+            if (rowMouse >= 0 & rowMouse < 4)
+            {
+                return pieceNames[rowMouse];
+            }
+            else 
+            {
+                return "";
+            }
+        }
+        else if (rowMouse <= 7 && rowMouse > 3)
+            {
+                return pieceNames[7 - rowMouse];
+            }
+        else
+        {
+            return "";
+        }
+    }
+
+    return ""; 
+}
+
+void Board::promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures)
+{
+    std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
+
+    Piece::Color color = std::get<0>(pawnPos);
+    int row = std::get<1>(pawnPos);
+    int col = std::get<2>(pawnPos);
 
     std::unique_ptr<Piece> newPiece;
 

@@ -32,6 +32,7 @@ public:
     void drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures);
     std::string getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight);
     void promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures);
+    std::tuple<Piece::Color, int, int> getPromotePawnPos();
 
     bool isWhiteTurn = true;
     unsigned int rounds = 0;
