@@ -26,7 +26,7 @@ Board::Board()
     }
 }
 
-Board::Board(float newHeight)
+Board::Board(float newHeight) 
     : newHeight(newHeight), isWhiteTurn(true) 
 {
     for (int row = 0; row < 8; row++) 
@@ -43,7 +43,7 @@ Board::~Board()
 
 }
 
-void Board::setScaleForAllPieces(float newHeight) 
+void Board::setScaleForAllPieces() 
 {
     for (auto& row : board) 
     {
@@ -89,12 +89,13 @@ void Board::setupBoard(const std::map<std::string, sf::Texture>& textures)
         board[6][col] = std::make_unique<Pawn>(textures.at("black-pawn"), col, 6, Piece::Color::Black, *this);
     }
 
-    setScaleForAllPieces(newHeight);
+    setScaleForAllPieces();
 }
 
-void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight) 
+void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY) 
 {
     float offset = newHeight / 8.0f;
+    float posX, posY;
 
     for (int row = 0; row < 8; row++) 
     {
@@ -102,29 +103,51 @@ void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY, float n
         {
             if (board[row][col] && board[row][col] != selectedPiece) 
             {
-                float posX = newPosX + col * offset;
-                float posY = newPosY + (7 - row) * offset;
+                posX = newPosX + col * offset;
+                posY = newPosY + (7 - row) * offset;
+
                 board[row][col]->setPosition(posX, posY);
                 board[row][col]->draw(window);
             }
         }
     }
 
-    if (isDragging && selectedPiece) {
+    if (isDragging && selectedPiece) 
+    {
         selectedPiece->draw(window);
     }
+}
+
+void Board::flipBoard()
+{
+    for (int i = 0; i < 4; i++) 
+    {
+        std::swap(board[i], board[7 - i]);
+    }
+    
+    for (int i = 0; i < 8; i++) 
+    {
+        for (int j = 0; j < 4; j++) 
+        {
+            std::swap(board[i][j], board[i][7 - j]);
+        }
+    }
+    
+    isFlipped = !isFlipped;
 }
 
 std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
 {
     Piece::Color color = isWhiteTurn ? Piece::Color::Black : Piece::Color::White;
 
-    int row = (color == Piece::Color::White) ? 7 : 0;  
+    int row = (color == Piece::Color::White) ? 7 : 0;
+    if (isFlipped) row = (color == Piece::Color::White) ? 0 : 7; 
+
     int col = -1;
 
     for (int i = 0; i < 8; i++) 
     {
-        if (dynamic_cast<Pawn*>(board[row][i].get())) 
+        if (board[row][i] && dynamic_cast<Pawn*>(board[row][i].get())) 
         {
             col = i;
             break;
@@ -134,7 +157,7 @@ std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
     return {color, row, col};
 }
 
-void Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures) 
+sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures) 
 {
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -144,13 +167,28 @@ void Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float n
 
     sf::RectangleShape promotionWindow({newHeight / 8.0f, newHeight / 2.0f});
     if (color == Piece::Color::White)
-    {
-        promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY + (7 - row) * newHeight / 8.0f});
+    {   
+        if (isFlipped)
+        {
+            promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 4) * newHeight / 8.0f});
+        }
+        else
+        {
+            promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY + (7 - row) * newHeight / 8.0f});
+        }
     }
     else
-    {
-        promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 7 + 3) * newHeight / 8.0f});
+    {           
+        if (isFlipped)
+        {
+            promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 7) * newHeight / 8.0f});
+        }
+        else
+        {
+            promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 7 + 3) * newHeight / 8.0f});
+        }
     }
+
     window.draw(promotionWindow);
 
     std::string colorPrefix = isWhiteTurn ? "black-" : "white-";
@@ -164,19 +202,44 @@ void Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float n
     {
         sf::Sprite sprite(textures[colorPrefix + pieceNames[i]]);
         sprite.setScale({iconSize / sprite.getLocalBounds().size.x, iconSize / sprite.getLocalBounds().size.y});
+        
         if (color == Piece::Color::White)
-        {
-            sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + i * iconSize});    
+        {   
+            if (isFlipped)
+            {
+                sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + (3 - i) * iconSize});  
+            }
+            else
+            {
+                sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + i * iconSize});    
+            }
         }
         else
         {
-            sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + (3 - i) * iconSize});
+            if (isFlipped)
+            {
+                sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + i * iconSize});  
+            }
+            else
+            {
+                sprite.setPosition({promotionWindow.getPosition().x, promotionWindow.getPosition().y + (3 - i) * iconSize});
+            }
         }
+        
         window.draw(sprite);
     }
+
+    return promotionWindow.getGlobalBounds();
 }
 
-std::string Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight)
+bool Board::isMouseInPromotionWindow(sf::RenderWindow& window, sf::FloatRect promotionWindowPos)
+{
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+    return promotionWindowPos.contains({(float)mousePos.x, (float)(mousePos.y)});
+}
+
+Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY)
 {   
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -184,8 +247,13 @@ std::string Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX
     int row = std::get<1>(pawnPos);
     int col = std::get<2>(pawnPos);
 
-    std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
-    
+    std::vector<Piece::Type> pieceTypes = {
+        Piece::Type::Queen,
+        Piece::Type::Rook,
+        Piece::Type::Knight,
+        Piece::Type::Bishop
+    };
+
     float iconSize = newHeight / 8.0f; 
     int rowMouse = (mousePos.y - newPosY) / iconSize;   
     int colMouse = (mousePos.x - newPosX) / iconSize;
@@ -194,29 +262,39 @@ std::string Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX
     {
         if (color == Piece::Color::White)
         {
-            if (rowMouse >= 0 & rowMouse < 4)
+            if (isFlipped)
             {
-                return pieceNames[rowMouse];
+                if (rowMouse <= 7 && rowMouse > 3)
+                {
+                    return pieceTypes[7 - rowMouse];
+                }
             }
             else 
+            if (rowMouse >= 0 && rowMouse < 4)
             {
-                return "";
+                return pieceTypes[rowMouse];
             }
         }
-        else if (rowMouse <= 7 && rowMouse > 3)
+        else 
+        {   
+            if (isFlipped)
             {
-                return pieceNames[7 - rowMouse];
+                if (rowMouse >= 0 && rowMouse < 4)
+                {
+                    return pieceTypes[rowMouse];
+                }
             }
-        else
-        {
-            return "";
+            if (rowMouse <= 7 && rowMouse > 3)
+            {
+                return pieceTypes[7 - rowMouse];
+            }
         }
     }
 
-    return ""; 
+    return Piece::Type::None; 
 }
 
-void Board::promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures)
+void Board::promotePawn(Piece::Type promotionPiece, std::map<std::string, sf::Texture>& textures)
 {
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -226,19 +304,19 @@ void Board::promotePawn(const std::string& promotionPiece, std::map<std::string,
 
     std::unique_ptr<Piece> newPiece;
 
-    if (promotionPiece == "queen") 
+    if (promotionPiece == Piece::Type::Queen) 
     {
         newPiece = std::make_unique<Queen>(textures.at((color == Piece::Color::White) ? "white-queen" : "black-queen"), col, row, color, *this);
     }
-    else if (promotionPiece == "rook") 
+    else if (promotionPiece == Piece::Type::Rook) 
     {
         newPiece = std::make_unique<Rook>(textures.at((color == Piece::Color::White) ? "white-rook" : "black-rook"), col, row, color, *this);
     }
-    else if (promotionPiece == "knight") 
+    else if (promotionPiece == Piece::Type::Knight) 
     {
         newPiece = std::make_unique<Knight>(textures.at((color == Piece::Color::White) ? "white-knight" : "black-knight"), col, row, color, *this);
     }
-    else if (promotionPiece == "bishop") 
+    else if (promotionPiece == Piece::Type::Bishop) 
     {
         newPiece = std::make_unique<Bishop>(textures.at((color == Piece::Color::White) ? "white-bishop" : "black-bishop"), col, row, color, *this);
     }
@@ -304,14 +382,12 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
             board[newRow][newCol] = std::move(selectedPiece);
 
             auto kingsPositions = getKingsPositions();
-            sf::Vector2i whiteKingPos = kingsPositions.first.first;
-            Piece::Color whiteKingColor = kingsPositions.first.second;
+            sf::Vector2i whiteKingPos = kingsPositions.first;
         
-            sf::Vector2i blackKingPos = kingsPositions.second.first;
-            Piece::Color blackKingColor = kingsPositions.second.second;
+            sf::Vector2i blackKingPos = kingsPositions.second;
 
-            bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, whiteKingColor);
-            bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, blackKingColor);
+            bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
+            bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
 
             if ((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked)) 
             {
@@ -335,12 +411,22 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
 
     if (board[newRow][newCol] && board[newRow][newCol]->getType() == Piece::Type::Pawn)
     {
-        if ((board[newRow][newCol]->getColor() == Piece::Color::White && newRow == 7) || 
-            (board[newRow][newCol]->getColor() == Piece::Color::Black && newRow == 0))
+        Piece::Color pieceColor = board[newRow][newCol]->getColor();
+    
+        int promotionRowWhite = 7;
+        int promotionRowBlack = 0;
+    
+        if (isFlipped) 
+        {
+            std::swap(promotionRowWhite, promotionRowBlack);
+        }
+
+        if ((pieceColor == Piece::Color::White && newRow == promotionRowWhite) || 
+            (pieceColor == Piece::Color::Black && newRow == promotionRowBlack))
         {
             promotionActive = true;
         }
-    }    
+    }
 
     selectedPiece.reset();
     isDragging = false;
@@ -352,10 +438,10 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
     }
 }
 
-std::pair<std::pair<sf::Vector2i, Piece::Color>, std::pair<sf::Vector2i, Piece::Color>> Board::getKingsPositions() 
+std::pair<sf::Vector2i, sf::Vector2i> Board::getKingsPositions() 
 {
-    sf::Vector2i whiteKingPos = sf::Vector2i(-1, -1);
-    sf::Vector2i blackKingPos = sf::Vector2i(-1, -1);
+    sf::Vector2i whiteKingPos(-1, -1);
+    sf::Vector2i blackKingPos(-1, -1);
 
     for (int row = 0; row < 8; row++) 
     {
@@ -363,24 +449,21 @@ std::pair<std::pair<sf::Vector2i, Piece::Color>, std::pair<sf::Vector2i, Piece::
         {
             std::unique_ptr<Piece>& piece = board[row][col];
 
-            if (piece) 
+            if (piece && piece->getType() == Piece::Type::King) 
             {
-                if (piece->getType() == Piece::Type::King) 
+                if (piece->getColor() == Piece::Color::White) 
                 {
-                    if (piece->getColor() == Piece::Color::White) 
-                    {
-                        whiteKingPos = sf::Vector2i(col, row);
-                    } 
-                    else if (piece->getColor() == Piece::Color::Black) 
-                    {
-                        blackKingPos = sf::Vector2i(col, row);
-                    }
+                    whiteKingPos = sf::Vector2i(col, row);
+                } 
+                else if (piece->getColor() == Piece::Color::Black) 
+                {
+                    blackKingPos = sf::Vector2i(col, row);
                 }
             }
         }
     }
 
-    return {{whiteKingPos, Piece::Color::White}, {blackKingPos, Piece::Color::Black}};
+    return {whiteKingPos, blackKingPos};
 }
 
 bool Board::isKingInCheck(int row, int col, Piece::Color kingColor) 
@@ -408,9 +491,12 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
 
 bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor) 
 {
-    int step = (targetCol > kingCol) ? 1 : -1;
+    int flippedTargetCol = isFlipped ? (targetCol == 2 ? 5 : 1) : targetCol;
+    int flippedMidCol = isFlipped ? (targetCol == 2 ? 4 : 2) : ((targetCol == 2) ? 3 : 5);
+    
+    int step = (flippedTargetCol > kingCol) ? 1 : -1;
 
-    for (int col = kingCol + step; col != targetCol; col += step) 
+    for (int col = kingCol + step; col != flippedTargetCol; col += step) 
     {
         if (board[row][col]) 
         {
@@ -418,25 +504,24 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
         }
     }
 
-    int midCol = (targetCol == 2) ? 3 : 5; 
-
     if (isKingInCheck(row, kingCol, kingColor)) 
     {
         return false;
     }
 
-    if (isKingInCheck(row, midCol, kingColor)) 
+    if (isKingInCheck(row, flippedMidCol, kingColor)) 
     {
         return false;
     }
 
-    if (isKingInCheck(row, targetCol, kingColor)) 
+    if (isKingInCheck(row, flippedTargetCol, kingColor)) 
     {
         return false;
     }
 
     return true;
 }
+
 
 
 

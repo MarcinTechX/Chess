@@ -30,6 +30,11 @@ bool Piece::contains(const sf::Vector2i& mousePosition)
     return bounds.contains(static_cast<sf::Vector2f>(mousePosition));
 }
 
+Piece::Type Piece::getType() const 
+{
+    return pieceType; 
+}
+
 Piece::Color Piece::getColor() const 
 {
     return pieceColor;
@@ -47,7 +52,12 @@ void Piece::setScaleFactor(float scaleFactor)
 }
 
 bool Piece::canMove(int startRow, int startCol, int endRow, int endCol) 
-{
+{   
+    if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
+    {
+        return false;
+    }
+
     if (canMoveImpl(startRow, startCol, endRow, endCol)) {
         movesCount++;  
         return true;

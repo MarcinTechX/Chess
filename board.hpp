@@ -17,22 +17,25 @@
 class Board 
 {
 public:
-    Board ();
+    Board();
     explicit Board(float newHeight);
     ~Board();
     void setupBoard(const std::map<std::string, sf::Texture>& textures);
-    void setScaleForAllPieces(float newHeight);
-    void draw(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight);
+    void setScaleForAllPieces();
+    void draw(sf::RenderWindow& window, float newPosX, float newPosY);
+    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> copyBoard(const std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board);
+    void flipBoard();
+    std::tuple<Piece::Color, int, int> getPromotePawnPos();
+    sf::FloatRect drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures);
+    bool isMouseInPromotionWindow(sf::RenderWindow& window, sf::FloatRect promotionWindowPos);
+    Piece::Type getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY);
+    void promotePawn(Piece::Type promotionPiece, std::map<std::string, sf::Texture>& textures);
     void handleMouseClick(const sf::Vector2i& mousePos);
     void handleMouseMove(const sf::Vector2i& mousePos);
     void handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, float newPosY);
+    std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
     bool isKingInCheck(int row, int col, Piece::Color kingColor); 
     bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
-    std::pair<std::pair<sf::Vector2i, Piece::Color>, std::pair<sf::Vector2i, Piece::Color>> getKingsPositions(); 
-    void drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, float newHeight, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures);
-    std::string getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY, float newHeight);
-    void promotePawn(const std::string& promotionPiece, std::map<std::string, sf::Texture>& textures);
-    std::tuple<Piece::Color, int, int> getPromotePawnPos();
 
     bool isWhiteTurn = true;
     unsigned int rounds = 0;
@@ -40,9 +43,12 @@ public:
     bool whiteKingChecked = false;
     bool blackKingChecked = false;
     std::array<std::array<std::unique_ptr<Piece>, 8>, 8> board;
+    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> boardCopy;
+    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> flippedBoard;
     sf::RectangleShape promotionWindow;
     std::map<std::string, sf::Sprite> promotionSprites;
     bool promotionActive = false;
+    bool isFlipped = false;
 
 protected:
     std::vector<std::unique_ptr<Piece>> pieces;

@@ -12,11 +12,6 @@ King::King(const sf::Texture& texture, float x, float y, Color color, Board& boa
 bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
 {  
     auto king = dynamic_cast<King*>(boardGame->board[startRow][startCol].get());
-    
-    if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
-    {
-        return false;
-    }
 
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {
@@ -25,16 +20,23 @@ bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
 
     if (movesCount == 0 && startRow == endRow) 
     {
-        if (endCol == 2 || endCol == 6)
+        int leftCol = boardGame->isFlipped ? 5 : 2;
+        int rightCol = boardGame->isFlipped ? 1 : 6;
+        int rookLeftCol = boardGame->isFlipped ? 7 : 0;
+        int rookRightCol = boardGame->isFlipped ? 0 : 7;
+        int newRookLeftCol = boardGame->isFlipped ? 4 : 3;
+        int newRookRightCol = boardGame->isFlipped ? 2 : 5;
+    
+        if (endCol == leftCol || endCol == rightCol) 
         {
-            int rookCol = (endCol == 2) ? 0 : 7;
+            int rookCol = (endCol == leftCol) ? rookLeftCol : rookRightCol;
             auto& rook = boardGame->board[startRow][rookCol];
-
+    
             if (rook && rook->getType() == Piece::Type::Rook && rook->movesCount == 0) 
             {   
                 if (boardGame->canCastle(startRow, startCol, endCol, pieceColor)) 
                 {   
-                    int newRookCol = (endCol == 2) ? 3 : 5; 
+                    int newRookCol = (endCol == leftCol) ? newRookLeftCol : newRookRightCol;
                     boardGame->board[startRow][newRookCol] = std::move(rook); 
                     boardGame->board[startRow][rookCol] = nullptr; 
                     return true;

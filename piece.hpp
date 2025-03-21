@@ -8,7 +8,7 @@ class Board;
 class Piece 
 {
 public:
-    enum class Type { King, Queen, Rook, Bishop, Knight, Pawn };
+    enum class Type { King, Queen, Rook, Bishop, Knight, Pawn, None};
     enum class Color { White, Black };
 
     Piece(const sf::Texture& texture, float x, float y, Type type, Color color, Board& boardGame);
@@ -26,11 +26,7 @@ public:
 
     void setScaleFactor(float scaleFactor);
 
-    Type getType() const 
-    {
-        return pieceType; 
-    }
-
+    Type getType() const; 
     Color getColor() const;
     sf::Sprite& getSprite();
 

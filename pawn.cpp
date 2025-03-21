@@ -7,21 +7,21 @@ Pawn::Pawn(const sf::Texture& texture, float x, float y, Color color, Board& boa
     : Piece(texture, x, y, Type::Pawn, color, boardGame)
     {
 
-    };
+    }
 
 bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
 {   
-    if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
-    {
-        return false;
-    }
-
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {
         return false;
     }
 
     int direction = (pieceColor == Color::White) ? 1 : -1; 
+
+    if (boardGame->isFlipped)  
+    {
+        direction = -direction;
+    }
 
     if (startCol == endCol) {
 
@@ -41,7 +41,8 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
             {   
                 return true;
             }
-        } else 
+        } 
+        else 
         {
             if (endRow == startRow + direction) 
             {
@@ -64,14 +65,14 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
             if (opponentPawn && opponentPawn->getColor() != pieceColor &&
                 boardGame->rounds == boardGame->roundEnPassant + 1 &&
                 opponentPawn->movesCount == 1 &&
-                startRow == (opponentPawn->getColor() == Color::White ? 3 : 4) && 
+                startRow == (boardGame->isFlipped ? (opponentPawn->getColor() == Color::White ? 4 : 3)
+                                                  : (opponentPawn->getColor() == Color::White ? 3 : 4)) && 
                 boardGame->board[endRow][endCol] == nullptr) 
             {
                 boardGame->board[startRow][endCol].reset();
                 return true;
             }
-        }
-    
+        }        
     }
     return false;
 }

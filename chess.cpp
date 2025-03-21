@@ -21,8 +21,9 @@ int main()
     unsigned int screenWidth = desktopSize.x;
     unsigned int screenHeight = desktopSize.y;
 
-    sf::RenderWindow window(sf::VideoMode({screenWidth, screenHeight}), "Chess", sf::Style::Default, sf::State::Fullscreen);
+    unsigned int shorterSide = std::min(screenWidth, screenHeight);
 
+    sf::RenderWindow window(sf::VideoMode({screenWidth, screenHeight}), "Chess", sf::Style::Default, sf::State::Fullscreen);
     sf::Texture boardTexture;
     
     if (!boardTexture.loadFromFile("Images/board/board.png")) 
@@ -32,7 +33,7 @@ int main()
 
     sf::Sprite boardSprite(boardTexture);
 
-    float newHeight = screenHeight * 0.8f;
+    float newHeight = shorterSide * 0.7f;
 
     float scaleFactorY = newHeight / boardTexture.getSize().y;
 
@@ -45,6 +46,8 @@ int main()
     float newPosY = (screenHeight - newHeight) / 2.0f;
 
     boardSprite.setPosition({newPosX, newPosY});
+
+    //boardSprite.setOrigin({boardTexture.getSize().x * scaleFactorX / 2.0f, boardTexture.getSize().y * scaleFactorY / 2.0f});
 
     std::map<std::string, sf::Texture> textures;
 
@@ -69,19 +72,12 @@ int main()
         texture.second.setSmooth(true);
     }
 
-    sf::RectangleShape promotionWindow({2*newHeight/8.0f, 2*newHeight/8.0f});
-    float promotionWindowHeight = promotionWindow.getSize().y;
-    float promotionWindowWidth = promotionWindow.getSize().x;
-    float newPosPromotionWindowX = (screenWidth - promotionWindowWidth) / 2.0f;
-    float newPosPromotionWindowY = (screenHeight - promotionWindowHeight) / 2.0f;
-    promotionWindow.setPosition({newPosPromotionWindowX, newPosPromotionWindowY});
-
     Board board(newHeight);  
     Board& boardRef = board;  
 
     boardRef.setupBoard(textures);
 
-    std::map<std::string, sf::Sprite> promotionSprites;
+    sf::FloatRect promotionWindowPos;
 
     while (window.isOpen()) 
     { 
@@ -97,6 +93,11 @@ int main()
                 {
                     window.close();
                 }
+                if (keyPressed->scancode == sf::Keyboard::Scancode::F)
+                {   
+                    boardRef.flipBoard();
+                    boardRef.getPromotePawnPos();
+                }
             }
             else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) 
             {
@@ -106,15 +107,15 @@ int main()
                     {
                         boardRef.handleMouseClick(sf::Mouse::getPosition(window));
                     }
-                    else
+                    else if (boardRef.isMouseInPromotionWindow(window, promotionWindowPos))
                     {
-                        std::string promotionPiece;
+                        Piece::Type promotionPiece;
                         do 
                         {
-                            promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window), newPosX, newPosY, newHeight);
+                            promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window), newPosX, newPosY);
                             sf::sleep(sf::milliseconds(10));
 
-                        } while (promotionPiece.empty()); 
+                        } while (promotionPiece == Piece::Type::None); 
 
                         boardRef.promotePawn(promotionPiece, textures);
 
@@ -142,11 +143,11 @@ int main()
 
         window.draw(boardSprite);
 
-        boardRef.draw(window, newPosX, newPosY, newHeight);
+        boardRef.draw(window, newPosX, newPosY);
 
         if(boardRef.promotionActive)
         {
-            boardRef.drawPromotionWindow(window, newPosX, newPosY, newHeight, screenWidth, screenHeight, textures);
+            promotionWindowPos = boardRef.drawPromotionWindow(window, newPosX, newPosY, screenWidth, screenHeight, textures);
         }
 
         window.display(); 

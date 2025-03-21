@@ -11,11 +11,6 @@ Bishop::Bishop(const sf::Texture& texture, float x, float y, Color color, Board&
 
 bool Bishop::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
 {
-    if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
-    {      
-        return false;
-    }
-
     if (boardGame->board[endRow][endCol] != nullptr) 
     {    
         if (boardGame->board[endRow][endCol]->getColor() == pieceColor) 
