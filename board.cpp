@@ -1,6 +1,7 @@
 #define rowsAndColumnsNumber 8
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <vector>
 #include <memory>
 #include <map>
@@ -12,6 +13,7 @@
 #include "queen.hpp"
 #include "king.hpp"
 #include "board.hpp"
+#include "soundmanager.hpp"
 
 #include <iostream>
 
@@ -36,6 +38,9 @@ Board::Board(float newHeight)
             board[row][col] = nullptr;
         }
     }
+    soundManager.loadSound("move", "./Sounds/move.wav");
+    soundManager.loadSound("capture", "./Sounds/capture.wav");
+    soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.wav");
 }
 
 Board::~Board()
@@ -138,7 +143,7 @@ void Board::flipBoard()
 
 std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
 {
-    Piece::Color color = isWhiteTurn ? Piece::Color::Black : Piece::Color::White;
+    Piece::Color color = isWhiteTurn ? Piece::Color::White : Piece::Color::Black;
 
     int row = (color == Piece::Color::White) ? 7 : 0;
     if (isFlipped) row = (color == Piece::Color::White) ? 0 : 7; 
@@ -191,7 +196,7 @@ sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX
 
     window.draw(promotionWindow);
 
-    std::string colorPrefix = isWhiteTurn ? "black-" : "white-";
+    std::string colorPrefix = isWhiteTurn ? "white-" : "black-";
     std::vector<std::string> pieceNames = {"queen", "rook", "knight", "bishop"};
 
     std::vector<std::pair<sf::Sprite, std::string>> sprites;
@@ -329,6 +334,9 @@ void Board::promotePawn(Piece::Type promotionPiece, std::map<std::string, sf::Te
         board[row][col] = std::move(newPiece);
     }
 
+    isWhiteTurn = !isWhiteTurn;
+    rounds++;
+
     promotionActive = false;
 }
 
@@ -363,8 +371,14 @@ void Board::handleMouseMove(const sf::Vector2i& mousePos)
 }
 
 void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, float newPosY) 
-{
+{   
+    soundManager.stopAllSounds();
+
     isMoveCorrect = false;
+    hasEnPassantMade = false;
+    bool hasMoved = true;
+
+    bool isPieceCaptured;
 
     if (!isDragging || !selectedPiece) 
         return;
@@ -373,6 +387,11 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
     int newRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
 
     std::unique_ptr<Piece> tempPiece;
+
+    if (selectedPieceOriginalPos.y == newRow && selectedPieceOriginalPos.x == newCol) 
+    {
+        hasMoved = false;
+    }
 
     if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
@@ -389,10 +408,13 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
             bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
             bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
 
+            isPieceCaptured = (tempPiece != nullptr) || hasEnPassantMade;
+
             if ((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked)) 
             {
                 board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(board[newRow][newCol]);
                 board[newRow][newCol] = std::move(tempPiece);
+                soundManager.playSoundOnce("incorrect_move");
             } 
             else 
             {
@@ -406,6 +428,10 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
         if (selectedPiece) 
         {
             board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+            if (hasMoved)
+            {
+                soundManager.playSoundOnce("incorrect_move");
+            }
         }
     }
 
@@ -428,14 +454,25 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
         }
     }
 
-    selectedPiece.reset();
-    isDragging = false;
-
     if (isMoveCorrect)
     {
-        isWhiteTurn = !isWhiteTurn;
-        rounds++;
+        if (!(board[newRow][newCol]->getType() == Piece::Type::Pawn && (newRow == 0 || newRow == 7)))
+        {
+            isWhiteTurn = !isWhiteTurn;
+            rounds++;
+        }
+        if (isPieceCaptured)
+        {
+            soundManager.playSoundOnce("capture");
+        }
+        else if (!isPieceCaptured)
+        {   
+            soundManager.playSoundOnce("move");
+        }
     }
+    
+    selectedPiece.reset();
+    isDragging = false;
 }
 
 std::pair<sf::Vector2i, sf::Vector2i> Board::getKingsPositions() 

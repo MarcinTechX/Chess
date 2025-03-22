@@ -13,6 +13,7 @@
 #include "bishop.hpp"
 #include "queen.hpp"
 #include "king.hpp"
+#include "soundmanager.hpp"
 
 class Board 
 {
@@ -49,6 +50,8 @@ public:
     std::map<std::string, sf::Sprite> promotionSprites;
     bool promotionActive = false;
     bool isFlipped = false;
+    bool isMoveCorrect = false;
+    bool hasEnPassantMade = false;
 
 protected:
     std::vector<std::unique_ptr<Piece>> pieces;
@@ -58,7 +61,7 @@ private:
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
     bool isDragging = false;
-    bool isMoveCorrect = false;
+    SoundManager soundManager;
 };
 
 #endif

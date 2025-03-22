@@ -70,6 +70,7 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
                 boardGame->board[endRow][endCol] == nullptr) 
             {
                 boardGame->board[startRow][endCol].reset();
+                boardGame->hasEnPassantMade = true;
                 return true;
             }
         }        

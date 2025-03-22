@@ -47,8 +47,6 @@ int main()
 
     boardSprite.setPosition({newPosX, newPosY});
 
-    //boardSprite.setOrigin({boardTexture.getSize().x * scaleFactorX / 2.0f, boardTexture.getSize().y * scaleFactorY / 2.0f});
-
     std::map<std::string, sf::Texture> textures;
 
     if (!textures["white-king"].loadFromFile("Images/pieces/white-king.png") ||
@@ -145,7 +143,7 @@ int main()
 
         boardRef.draw(window, newPosX, newPosY);
 
-        if(boardRef.promotionActive)
+        if (boardRef.promotionActive)
         {
             promotionWindowPos = boardRef.drawPromotionWindow(window, newPosX, newPosY, screenWidth, screenHeight, textures);
         }
