@@ -70,12 +70,34 @@ int main()
         texture.second.setSmooth(true);
     }
 
-    Board board(newHeight);  
+    Board board(newHeight, boardTexture, window);  
     Board& boardRef = board;  
 
     boardRef.setupBoard(textures);
 
     sf::FloatRect promotionWindowPos;
+/*
+    sf::Image boardImage = boardTexture.copyToImage();
+
+    int numberOfPixelsToChange = 10000;
+    sf::Color newColor(255, 0, 0);
+
+    for (int i = 0; i < numberOfPixelsToChange; ++i)
+    {
+        unsigned int x = std::rand() % boardImage.getSize().x; 
+        unsigned int y = std::rand() % boardImage.getSize().y; 
+
+        if (x < boardImage.getSize().x && y < boardImage.getSize().y)
+        {
+            boardImage.setPixel({x, y}, newColor); 
+        }
+    }
+
+    if (!boardTexture.loadFromImage(boardImage)) {
+        std::cerr << "Failed to load texture from modified image!" << std::endl;
+        return -1;
+    }
+*/
 
     while (window.isOpen()) 
     { 
@@ -138,8 +160,6 @@ int main()
         }
 
         window.clear(sf::Color(128,128,128));
-
-        window.draw(boardSprite);
 
         boardRef.draw(window, newPosX, newPosY);
 

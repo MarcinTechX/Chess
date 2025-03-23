@@ -14,38 +14,59 @@
 #include "king.hpp"
 #include "board.hpp"
 #include "soundmanager.hpp"
+#include "colorconverter.hpp"
 
 #include <iostream>
 
-Board::Board() 
+Board::Board(float newHeight, const sf::Texture& boardTexture, sf::RenderWindow& window)
+    : newHeight(newHeight), isWhiteTurn(true), boardSprite(boardTexture)
 {
-    for (int row = 0; row < 8; row++)       
-    {
-        for (int col = 0; col < 8; col++) 
-        {
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
             board[row][col] = nullptr;
         }
     }
-}
 
-Board::Board(float newHeight) 
-    : newHeight(newHeight), isWhiteTurn(true) 
-{
-    for (int row = 0; row < 8; row++) 
-    {
-        for (int col = 0; col < 8; col++) 
-        {
-            board[row][col] = nullptr;
-        }
-    }
-    soundManager.loadSound("move", "./Sounds/move.wav");
-    soundManager.loadSound("capture", "./Sounds/capture.wav");
-    soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.wav");
+    this->boardTexture = boardTexture;
+    this->boardSprite.setTexture(this->boardTexture);
+
+    soundManager.loadSound("move", "./Sounds/move.ogg");
+    soundManager.loadSound("capture", "./Sounds/capture.ogg");
+    soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg");
+
+    updateBoard(window);
 }
 
 Board::~Board()
 {
 
+}
+
+void Board::updateBoard(sf::RenderWindow& window) 
+{   
+    sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
+
+    unsigned int screenWidth = desktopSize.x;
+    unsigned int screenHeight = desktopSize.y;
+
+    unsigned int shorterSide = std::min(screenWidth, screenHeight); 
+
+    float newHeight = shorterSide * 0.7f;
+    float scaleFactorY = newHeight / boardTexture.getSize().y;
+    float scaleFactorX = scaleFactorY * (boardTexture.getSize().x / boardTexture.getSize().y);
+    boardSprite.setScale({scaleFactorX, scaleFactorY}); 
+
+    float newWidth = boardTexture.getSize().x * scaleFactorX;
+    float newPosX = (screenWidth - newWidth) / 2.0f;
+    float newPosY = (screenHeight - newHeight) / 2.0f;
+
+    boardSprite.setPosition({newPosX, newPosY}); 
+
+    if (!isInitialBoardTextureSet) 
+    {
+        initialBoardTexture = boardTexture;
+        isInitialBoardTextureSet = true;
+    }
 }
 
 void Board::setScaleForAllPieces() 
@@ -97,8 +118,68 @@ void Board::setupBoard(const std::map<std::string, sf::Texture>& textures)
     setScaleForAllPieces();
 }
 
+void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, sf::Texture& boardTexture) 
+{
+    sf::Image boardImage = boardTexture.copyToImage();  
+    sf::Image boardImageOriginal = initialBoardTexture.copyToImage();  
+
+    unsigned int squareWidth = boardImage.getSize().x / 8;
+    unsigned int squareHeight = boardImage.getSize().y / 8;
+
+    sf::Color pixel1 = boardImageOriginal.getPixel({0, 0});  
+    sf::Color pixel2 = boardImageOriginal.getPixel({(squareWidth), 0});  
+
+    int avgRed = (pixel1.r + pixel2.r) / 2;
+    int avgGreen = (pixel1.g + pixel2.g) / 2;
+    int avgBlue = (pixel1.b + pixel2.b) / 2;
+
+    sf::Color avgColor(avgRed, avgGreen, avgBlue);
+
+    auto adjustColorComponent = [](auto& colorComponent) 
+    {
+        colorComponent = (colorComponent < 128) ? colorComponent + 128 : colorComponent - 128;
+    };
+    
+    adjustColorComponent(avgColor.r);
+    adjustColorComponent(avgColor.g);
+    adjustColorComponent(avgColor.b);
+
+    auto changePixelsInSquare = [&](int row, int col) 
+    {
+        int startX = col * squareWidth;
+        int startY = (7 - row) * squareHeight;
+        
+        for (int i = 0; i < squareWidth; i++) 
+        {
+            for (int j = 0; j < squareHeight; j++) 
+            {
+                unsigned int x = startX + i;
+                unsigned int y = startY + j;
+
+                if (x < boardImage.getSize().x && y < boardImage.getSize().y) 
+                {
+                    //boardImage.setPixel({x, y}, adjustPixel(boardImage.getPixel({x, y})));
+                    boardImage.setPixel({x, y}, avgColor);
+                }
+            }
+        }
+    };
+
+    changePixelsInSquare(oldRow, oldCol);  
+    changePixelsInSquare(newRow, newCol); 
+
+    if (!boardTexture.loadFromImage(boardImage))  
+    {
+        std::cerr << "Failed to load texture from modified image!" << std::endl;
+    }
+}
+
 void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY) 
 {
+    updateBoard(window);
+
+    window.draw(boardSprite);
+
     float offset = newHeight / 8.0f;
     float posX, posY;
 
@@ -137,8 +218,33 @@ void Board::flipBoard()
             std::swap(board[i][j], board[i][7 - j]);
         }
     }
+
+    flipBoardTexture();
     
     isFlipped = !isFlipped;
+}
+
+void Board::flipBoardTexture()
+{
+    sf::Image boardImage = boardTexture.copyToImage();
+
+    int width = boardImage.getSize().x;
+    int height = boardImage.getSize().y;
+
+    for (unsigned int row = 0; row < height / 2; row++) 
+    {
+        for (unsigned int col = 0; col < width; col++) 
+        {
+            sf::Color temp = boardImage.getPixel({col, row});
+            boardImage.setPixel({col, row}, boardImage.getPixel({width - col - 1, height - row - 1}));
+            boardImage.setPixel({width - col - 1, height - row - 1}, temp);
+        }
+    }
+
+    if (!boardTexture.loadFromImage(boardImage)) 
+    {
+        std::cerr << "Failed to load flipped texture!" << std::endl;
+    }
 }
 
 std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
@@ -383,8 +489,11 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
     if (!isDragging || !selectedPiece) 
         return;
 
-    int newCol = (mousePos.x - newPosX) / (newHeight / 8.0f);
+    int oldRow = selectedPieceOriginalPos.y;
+    int oldCol = selectedPieceOriginalPos.x;
+
     int newRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
+    int newCol = (mousePos.x - newPosX) / (newHeight / 8.0f);
 
     std::unique_ptr<Piece> tempPiece;
 
@@ -419,14 +528,16 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
             else 
             {
                 isMoveCorrect = true;
+                boardTexture = initialBoardTexture;
+                changeSquarePixels(oldRow, oldCol, newRow, newCol, boardTexture);
             }
         }
     }
     
     if (!isMoveCorrect) 
-    {
+    {   
         if (selectedPiece) 
-        {
+        {   
             board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
             if (hasMoved)
             {
@@ -455,11 +566,12 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, floa
     }
 
     if (isMoveCorrect)
-    {
+    {   
         if (!(board[newRow][newCol]->getType() == Piece::Type::Pawn && (newRow == 0 || newRow == 7)))
         {
             isWhiteTurn = !isWhiteTurn;
             rounds++;
+            lastRoundIndex = rounds;
         }
         if (isPieceCaptured)
         {
@@ -557,6 +669,21 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
     }
 
     return true;
+}
+
+sf::Color Board::adjustPixel(const sf::Color& color) 
+{
+    ColorConverter::RGB rgb = {color.r, color.g, color.b};
+    ColorConverter::HSV hsv = ColorConverter::rgbToHsv(rgb);
+    ColorConverter::HSV adjustPixel = ColorConverter::adjustValue(hsv);
+    ColorConverter::HSV adjustPixel2 = ColorConverter::adjustSaturation(adjustPixel);
+    ColorConverter::RGB rgb2 = ColorConverter::hsvToRgb(adjustPixel2);
+
+    int newR = rgb2.r;
+    int newG = rgb2.g;
+    int newB = rgb2.b;
+
+    return sf::Color(newR, newG, newB, color.a);
 }
 
 

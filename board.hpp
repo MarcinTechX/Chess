@@ -19,13 +19,15 @@ class Board
 {
 public:
     Board();
-    explicit Board(float newHeight);
+    explicit Board(float newHeight, const sf::Texture& boardTexture, sf::RenderWindow& window);
     ~Board();
+    void updateBoard(sf::RenderWindow& window); 
     void setupBoard(const std::map<std::string, sf::Texture>& textures);
     void setScaleForAllPieces();
+    void changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, sf::Texture& boardTexture); 
     void draw(sf::RenderWindow& window, float newPosX, float newPosY);
-    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> copyBoard(const std::array<std::array<std::unique_ptr<Piece>, 8>, 8>& board);
     void flipBoard();
+    void flipBoardTexture();
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     sf::FloatRect drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures);
     bool isMouseInPromotionWindow(sf::RenderWindow& window, sf::FloatRect promotionWindowPos);
@@ -37,6 +39,7 @@ public:
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
     bool isKingInCheck(int row, int col, Piece::Color kingColor); 
     bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
+    sf::Color adjustPixel(const sf::Color& color);
 
     bool isWhiteTurn = true;
     unsigned int rounds = 0;
@@ -58,10 +61,15 @@ protected:
 
 private:
     float newHeight;
+    sf::Texture initialBoardTexture; 
+    bool isInitialBoardTextureSet = false;
+    sf::Texture boardTexture;
+    sf::Sprite boardSprite;
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
     bool isDragging = false;
     SoundManager soundManager;
+    int lastRoundIndex;
 };
 
 #endif
