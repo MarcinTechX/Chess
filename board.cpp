@@ -135,6 +135,7 @@ void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, s
 
     sf::Color avgColor(avgRed, avgGreen, avgBlue);
 
+    /*
     auto adjustColorComponent = [](auto& colorComponent) 
     {
         colorComponent = (colorComponent < 128) ? colorComponent + 128 : colorComponent - 128;
@@ -143,7 +144,8 @@ void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, s
     adjustColorComponent(avgColor.r);
     adjustColorComponent(avgColor.g);
     adjustColorComponent(avgColor.b);
-
+    */
+   
     auto changePixelsInSquare = [&](int row, int col) 
     {
         int startX = col * squareWidth;
