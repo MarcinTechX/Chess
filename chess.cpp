@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <thread>
 #include "board.hpp"
 #include "piece.hpp"
 #include "pawn.hpp"
@@ -13,94 +14,76 @@
 #include "bishop.hpp"
 #include "knight.hpp"
 #include "rook.hpp"
+#include "soundmanager.hpp"
 
-int main()
+void loadBoard(sf::Texture& boardTexture)
 {
-    sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
-
-    unsigned int screenWidth = desktopSize.x;
-    unsigned int screenHeight = desktopSize.y;
-
-    unsigned int shorterSide = std::min(screenWidth, screenHeight);
-
-    sf::RenderWindow window(sf::VideoMode({screenWidth, screenHeight}), "Chess", sf::Style::Default, sf::State::Fullscreen);
-    sf::Texture boardTexture;
-    
-    if (!boardTexture.loadFromFile("Images/board/board.png")) 
+    if (!boardTexture.loadFromFile("./Images/board/board.png")) 
     {
-        return -1;
+        std::cerr << "Failed to load board!" << std::endl;
     }
+}
 
-    sf::Sprite boardSprite(boardTexture);
-
-    float newHeight = shorterSide * 0.7f;
-
-    float scaleFactorY = newHeight / boardTexture.getSize().y;
-
-    float scaleFactorX = scaleFactorY * (boardTexture.getSize().x / boardTexture.getSize().y);
-
-    boardSprite.setScale({scaleFactorX, scaleFactorY});
-
-    float newWidth = boardTexture.getSize().x * scaleFactorX;
-    float newPosX = (screenWidth - newWidth) / 2.0f;
-    float newPosY = (screenHeight - newHeight) / 2.0f;
-
-    boardSprite.setPosition({newPosX, newPosY});
-
-    std::map<std::string, sf::Texture> textures;
-
-    if (!textures["white-king"].loadFromFile("Images/pieces/white-king.png") ||
-        !textures["white-pawn"].loadFromFile("Images/pieces/white-pawn.png") ||
-        !textures["white-queen"].loadFromFile("Images/pieces/white-queen.png") ||
-        !textures["white-rook"].loadFromFile("Images/pieces/white-rook.png") ||
-        !textures["white-bishop"].loadFromFile("Images/pieces/white-bishop.png") ||
-        !textures["white-knight"].loadFromFile("Images/pieces/white-knight.png") ||
-        !textures["black-king"].loadFromFile("Images/pieces/black-king.png") ||
-        !textures["black-pawn"].loadFromFile("Images/pieces/black-pawn.png") ||
-        !textures["black-queen"].loadFromFile("Images/pieces/black-queen.png") ||
-        !textures["black-rook"].loadFromFile("Images/pieces/black-rook.png") ||
-        !textures["black-bishop"].loadFromFile("Images/pieces/black-bishop.png") ||
-        !textures["black-knight"].loadFromFile("Images/pieces/black-knight.png")) 
+void loadPieces(std::map<std::string, sf::Texture>& textures)
+{
+    if (!textures["white-king"].loadFromFile("./Images/pieces/white-king.png") ||
+        !textures["white-pawn"].loadFromFile("./Images/pieces/white-pawn.png") ||
+        !textures["white-queen"].loadFromFile("./Images/pieces/white-queen.png") ||
+        !textures["white-rook"].loadFromFile("./Images/pieces/white-rook.png") ||
+        !textures["white-bishop"].loadFromFile("./Images/pieces/white-bishop.png") ||
+        !textures["white-knight"].loadFromFile("./Images/pieces/white-knight.png") ||
+        !textures["black-king"].loadFromFile("./Images/pieces/black-king.png") ||
+        !textures["black-pawn"].loadFromFile("./Images/pieces/black-pawn.png") ||
+        !textures["black-queen"].loadFromFile("./Images/pieces/black-queen.png") ||
+        !textures["black-rook"].loadFromFile("./Images/pieces/black-rook.png") ||
+        !textures["black-bishop"].loadFromFile("./Images/pieces/black-bishop.png") ||
+        !textures["black-knight"].loadFromFile("./Images/pieces/black-knight.png")) 
     {
-        return -1;
+        std::cerr << "Failed to load textures!" << std::endl;
     }
 
     for (auto& texture : textures) 
     {
         texture.second.setSmooth(true);
     }
+}
 
-    Board board(newHeight, boardTexture, window);  
-    Board& boardRef = board;  
-
-    boardRef.setupBoard(textures);
-
-    sf::FloatRect promotionWindowPos;
-/*
-    sf::Image boardImage = boardTexture.copyToImage();
-
-    int numberOfPixelsToChange = 10000;
-    sf::Color newColor(255, 0, 0);
-
-    for (int i = 0; i < numberOfPixelsToChange; ++i)
-    {
-        unsigned int x = std::rand() % boardImage.getSize().x; 
-        unsigned int y = std::rand() % boardImage.getSize().y; 
-
-        if (x < boardImage.getSize().x && y < boardImage.getSize().y)
-        {
-            boardImage.setPixel({x, y}, newColor); 
-        }
+void loadSounds(SoundManager& soundManager)
+{
+    if (!soundManager.loadSound("move", "./Sounds/move.ogg") ||
+        !soundManager.loadSound("capture", "./Sounds/capture.ogg") ||
+        !soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg")) {
+        std::cerr << "Failed to load sound!" << std::endl;
     }
+}
 
-    if (!boardTexture.loadFromImage(boardImage)) {
-        std::cerr << "Failed to load texture from modified image!" << std::endl;
-        return -1;
-    }
-*/
+int main()
+{
+    sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
+
+    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen);
+
+    sf::Texture boardTexture;
+
+    std::map<std::string, sf::Texture> textures;
+
+    SoundManager soundManager;
+
+    std::thread loadBoardThread(loadBoard, std::ref(boardTexture));
+    std::thread loadPiecesThread(loadPieces, std::ref(textures));
+    std::thread loadSoundsThread(loadSounds, std::ref(soundManager));    
+
+    loadBoardThread.join();
+    loadPiecesThread.join();    
+    loadSoundsThread.join();
+
+    Board board(window, desktopSize, boardTexture, textures, soundManager);  
+    Board& boardRef = board; 
+
+    boardRef.setupBoard();
 
     while (window.isOpen()) 
-    { 
+    {         
         while (const std::optional event = window.pollEvent()) 
         {
             if (event->is<sf::Event::Closed>()) 
@@ -127,17 +110,17 @@ int main()
                     {
                         boardRef.handleMouseClick(sf::Mouse::getPosition(window));
                     }
-                    else if (boardRef.isMouseInPromotionWindow(window, promotionWindowPos))
+                    else if (boardRef.isMouseInPromotionWindow(window))
                     {
                         Piece::Type promotionPiece;
                         do 
                         {
-                            promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window), newPosX, newPosY);
+                            promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window));
                             sf::sleep(sf::milliseconds(10));
 
                         } while (promotionPiece == Piece::Type::None); 
 
-                        boardRef.promotePawn(promotionPiece, textures);
+                        boardRef.promotePawn(promotionPiece);
 
                         boardRef.promotionActive = false;
                     }
@@ -153,7 +136,7 @@ int main()
                 {   
                     if(!boardRef.promotionActive)
                     {
-                        boardRef.handleMouseRelease(sf::Mouse::getPosition(window), newPosX, newPosY);
+                        boardRef.handleMouseRelease(sf::Mouse::getPosition(window));
                     }
                 }
             }
@@ -161,11 +144,11 @@ int main()
 
         window.clear(sf::Color(128,128,128));
 
-        boardRef.draw(window, newPosX, newPosY);
+        boardRef.draw(window);
 
         if (boardRef.promotionActive)
         {
-            promotionWindowPos = boardRef.drawPromotionWindow(window, newPosX, newPosY, screenWidth, screenHeight, textures);
+            boardRef.drawPromotionWindow(window);
         }
 
         window.display(); 

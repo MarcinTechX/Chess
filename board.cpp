@@ -18,8 +18,10 @@
 
 #include <iostream>
 
-Board::Board(float newHeight, const sf::Texture& boardTexture, sf::RenderWindow& window)
-    : newHeight(newHeight), isWhiteTurn(true), boardSprite(boardTexture)
+Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager)
+    : isWhiteTurn(true), boardSprite(boardTexture), desktopSize(desktopSize), soundManager(soundManager), textures(textures), 
+    isFlipped(false), isInitialBoardTextureSet(false), promotionActive(false), rounds(0), roundEnPassant(0), whiteKingChecked(false), blackKingChecked(false), 
+    isMoveCorrect(false), hasEnPassantMade(false)
 {
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
@@ -29,10 +31,6 @@ Board::Board(float newHeight, const sf::Texture& boardTexture, sf::RenderWindow&
 
     this->boardTexture = boardTexture;
     this->boardSprite.setTexture(this->boardTexture);
-
-    soundManager.loadSound("move", "./Sounds/move.ogg");
-    soundManager.loadSound("capture", "./Sounds/capture.ogg");
-    soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg");
 
     updateBoard(window);
 }
@@ -44,21 +42,19 @@ Board::~Board()
 
 void Board::updateBoard(sf::RenderWindow& window) 
 {   
-    sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
-
     unsigned int screenWidth = desktopSize.x;
     unsigned int screenHeight = desktopSize.y;
 
     unsigned int shorterSide = std::min(screenWidth, screenHeight); 
 
-    float newHeight = shorterSide * 0.7f;
+    newHeight = shorterSide * 0.7f;
     float scaleFactorY = newHeight / boardTexture.getSize().y;
     float scaleFactorX = scaleFactorY * (boardTexture.getSize().x / boardTexture.getSize().y);
     boardSprite.setScale({scaleFactorX, scaleFactorY}); 
 
     float newWidth = boardTexture.getSize().x * scaleFactorX;
-    float newPosX = (screenWidth - newWidth) / 2.0f;
-    float newPosY = (screenHeight - newHeight) / 2.0f;
+    newPosX = (screenWidth - newWidth) / 2.0f;
+    newPosY = (screenHeight - newHeight) / 2.0f;
 
     boardSprite.setPosition({newPosX, newPosY}); 
 
@@ -85,8 +81,8 @@ void Board::setScaleForAllPieces()
     }
 }
 
-void Board::setupBoard(const std::map<std::string, sf::Texture>& textures) 
-{
+void Board::setupBoard() 
+{    
     board[0][0] = std::make_unique<Rook>(textures.at("white-rook"), 0, 0, Piece::Color::White, *this);
     board[0][1] = std::make_unique<Knight>(textures.at("white-knight"), 1, 0, Piece::Color::White, *this);
     board[0][2] = std::make_unique<Bishop>(textures.at("white-bishop"), 2, 0, Piece::Color::White, *this);
@@ -169,17 +165,15 @@ void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, s
 
     changePixelsInSquare(oldRow, oldCol);  
     changePixelsInSquare(newRow, newCol); 
-
+    
     if (!boardTexture.loadFromImage(boardImage))  
     {
         std::cerr << "Failed to load texture from modified image!" << std::endl;
     }
 }
 
-void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY) 
-{
-    updateBoard(window);
-
+void Board::draw(sf::RenderWindow& window) 
+{   
     window.draw(boardSprite);
 
     float offset = newHeight / 8.0f;
@@ -190,7 +184,7 @@ void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY)
         for (int col = 0; col < 8; col++) 
         {
             if (board[row][col] && board[row][col] != selectedPiece) 
-            {
+            {          
                 posX = newPosX + col * offset;
                 posY = newPosY + (7 - row) * offset;
 
@@ -204,6 +198,8 @@ void Board::draw(sf::RenderWindow& window, float newPosX, float newPosY)
     {
         selectedPiece->draw(window);
     }
+
+    updateBoard(window);
 }
 
 void Board::flipBoard()
@@ -270,7 +266,7 @@ std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
     return {color, row, col};
 }
 
-sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX, float newPosY, unsigned int screenWidth, unsigned int screenHeight, std::map<std::string, sf::Texture>& textures) 
+sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window) 
 {
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -345,14 +341,15 @@ sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window, float newPosX
     return promotionWindow.getGlobalBounds();
 }
 
-bool Board::isMouseInPromotionWindow(sf::RenderWindow& window, sf::FloatRect promotionWindowPos)
+bool Board::isMouseInPromotionWindow(sf::RenderWindow& window)
 {
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    promotionWindowPos = drawPromotionWindow(window);
 
     return promotionWindowPos.contains({(float)mousePos.x, (float)(mousePos.y)});
 }
 
-Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX, float newPosY)
+Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos)
 {   
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -407,7 +404,7 @@ Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos, float newPosX
     return Piece::Type::None; 
 }
 
-void Board::promotePawn(Piece::Type promotionPiece, std::map<std::string, sf::Texture>& textures)
+void Board::promotePawn(Piece::Type promotionPiece)
 {
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -478,7 +475,7 @@ void Board::handleMouseMove(const sf::Vector2i& mousePos)
     }
 }
 
-void Board::handleMouseRelease(const sf::Vector2i& mousePos, float newPosX, float newPosY) 
+void Board::handleMouseRelease(const sf::Vector2i& mousePos) 
 {   
     soundManager.stopAllSounds();
 
