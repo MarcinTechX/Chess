@@ -26,25 +26,44 @@ void loadBoard(sf::Texture& boardTexture)
 
 void loadPieces(std::map<std::string, sf::Texture>& textures)
 {
-    if (!textures["white-king"].loadFromFile("./Images/pieces/white-king.png") ||
-        !textures["white-pawn"].loadFromFile("./Images/pieces/white-pawn.png") ||
-        !textures["white-queen"].loadFromFile("./Images/pieces/white-queen.png") ||
-        !textures["white-rook"].loadFromFile("./Images/pieces/white-rook.png") ||
-        !textures["white-bishop"].loadFromFile("./Images/pieces/white-bishop.png") ||
-        !textures["white-knight"].loadFromFile("./Images/pieces/white-knight.png") ||
-        !textures["black-king"].loadFromFile("./Images/pieces/black-king.png") ||
-        !textures["black-pawn"].loadFromFile("./Images/pieces/black-pawn.png") ||
-        !textures["black-queen"].loadFromFile("./Images/pieces/black-queen.png") ||
-        !textures["black-rook"].loadFromFile("./Images/pieces/black-rook.png") ||
-        !textures["black-bishop"].loadFromFile("./Images/pieces/black-bishop.png") ||
-        !textures["black-knight"].loadFromFile("./Images/pieces/black-knight.png")) 
+    sf::Image image;
+    if (!image.loadFromFile("./Images/pieces/pieces.png")) 
     {
-        std::cerr << "Failed to load textures!" << std::endl;
+        std::cerr << "Failed to load image!" << std::endl;
+        return;
     }
 
-    for (auto& texture : textures) 
+    const int imageWidth = image.getSize().x;
+    const int imageHeight = image.getSize().y;
+
+    const int pieceWidth = imageWidth / 6;
+    const int pieceHeight = imageHeight / 2;
+
+    std::map<std::string, sf::IntRect> pieceRects;
+    std::vector<std::string> whitePieces = {"pawn", "king", "queen", "rook", "bishop", "knight"};
+    std::vector<std::string> blackPieces = {"pawn", "king", "queen", "rook", "bishop", "knight"};
+
+    int baseYWhite = 0;
+    int baseYBlack = pieceHeight;
+
+    for (int i = 0; i < whitePieces.size(); i++) 
     {
-        texture.second.setSmooth(true);
+        pieceRects["white-" + whitePieces[i]] = sf::IntRect({i * pieceWidth, baseYWhite}, {pieceWidth, pieceHeight});
+        pieceRects["black-" + blackPieces[i]] = sf::IntRect({i * pieceWidth, baseYBlack}, {pieceWidth, pieceHeight});
+    }
+
+    for (const auto& [key, rect] : pieceRects) 
+    {
+        sf::Texture texture;
+        if (texture.loadFromImage(image, true, rect)) 
+        {
+            texture.setSmooth(true);
+            textures[key] = std::move(texture); 
+        }
+        else 
+        {
+            std::cerr << "Failed to load texture for " << key << std::endl;
+        }
     }
 }
 

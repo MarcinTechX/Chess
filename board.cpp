@@ -690,3 +690,5 @@ sf::Color Board::adjustPixel(const sf::Color& color)
 
 
 
+
+
