@@ -1,2 +1,5 @@
 .vscode/
 chess.exe
+dist/*
+obj/*
+*.local.bat
