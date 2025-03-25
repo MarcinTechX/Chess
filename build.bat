@@ -12,13 +12,13 @@ echo SFML_DIR: %SFML_DIR%
 
 :::::::::: VARIABLES :::::::::::
 
-set SOURCES=chess.cpp board.cpp piece.cpp pawn.cpp bishop.cpp king.cpp rook.cpp knight.cpp queen.cpp
+set SOURCES=chess.cpp board.cpp piece.cpp pawn.cpp bishop.cpp king.cpp rook.cpp knight.cpp queen.cpp colorconverter.cpp soundmanager.cpp
 set OUTPUT=dist\chess.exe
 
 :::::::::: BUILD :::::::::::
 
 @echo on
-g++ %SOURCES% -o %OUTPUT% -I%SFML_DIR%\include -L%SFML_DIR%\lib -lsfml-graphics -lsfml-window -lsfml-system
+g++ %SOURCES% -o %OUTPUT% -I%SFML_DIR%\include -L%SFML_DIR%\lib -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-system
 @echo off
 
 if ERRORLEVEL 1 (
@@ -26,15 +26,3 @@ if ERRORLEVEL 1 (
 )
 
 echo Compilation Success!
-
-if "%1"=="" (
-    exit /b 0
-)
-
-:::::::::: INSTALL :::::::::::
-echo Installing...
-
-:: Copy Images folder
-xcopy Images dist\Images /Y /Q /I /E
-
-:: potrzebne DLL przekopiuj ręcznie
