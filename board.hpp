@@ -24,7 +24,7 @@ public:
     void updateBoard(sf::RenderWindow& window); 
     void setupBoard();
     void setScaleForAllPieces();
-    void changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, sf::Texture& boardTexture); 
+    void changeSquarePixels(); 
     void draw(sf::RenderWindow& window);
     void flipBoard();
     void flipBoardTexture();
@@ -64,17 +64,22 @@ private:
     float newHeight;
     float newPosX, newPosY;
     unsigned intscreenWidth, screenHeight;
+    sf::Image boardImage;
+    sf::Image boardImageOriginal;
     sf::Texture initialBoardTexture; 
     bool isInitialBoardTextureSet = false;
     sf::Texture boardTexture;
     sf::Sprite boardSprite;
     std::map<std::string, sf::Texture> textures;
+    sf::RectangleShape highlightSquare1, highlightSquare2;
+    bool showHighlights = false;
     sf::FloatRect promotionWindowPos;
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
     bool isDragging = false;
     SoundManager& soundManager;
     int lastRoundIndex;
+    int newRow, newCol, oldRow, oldCol;
 };
 
 #endif

@@ -23,14 +23,20 @@ Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf
     isFlipped(false), isInitialBoardTextureSet(false), promotionActive(false), rounds(0), roundEnPassant(0), whiteKingChecked(false), blackKingChecked(false), 
     isMoveCorrect(false), hasEnPassantMade(false)
 {
-    for (int row = 0; row < 8; row++) {
-        for (int col = 0; col < 8; col++) {
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
             board[row][col] = nullptr;
         }
     }
 
     this->boardTexture = boardTexture;
     this->boardSprite.setTexture(this->boardTexture);
+    this->boardImage = this->boardTexture.copyToImage();
+
+    highlightSquare1.setFillColor(sf::Color(0, 0, 0, 0));
+    highlightSquare2.setFillColor(sf::Color(0, 0, 0, 0));
 
     updateBoard(window);
 }
@@ -114,7 +120,7 @@ void Board::setupBoard()
     setScaleForAllPieces();
 }
 
-void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, sf::Texture& boardTexture) 
+void Board::changeSquarePixels() 
 {
     sf::Image boardImage = boardTexture.copyToImage();  
     sf::Image boardImageOriginal = initialBoardTexture.copyToImage();  
@@ -131,17 +137,6 @@ void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, s
 
     sf::Color avgColor(avgRed, avgGreen, avgBlue);
 
-    /*
-    auto adjustColorComponent = [](auto& colorComponent) 
-    {
-        colorComponent = (colorComponent < 128) ? colorComponent + 128 : colorComponent - 128;
-    };
-    
-    adjustColorComponent(avgColor.r);
-    adjustColorComponent(avgColor.g);
-    adjustColorComponent(avgColor.b);
-    */
-   
     auto changePixelsInSquare = [&](int row, int col) 
     {
         int startX = col * squareWidth;
@@ -156,7 +151,6 @@ void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, s
 
                 if (x < boardImage.getSize().x && y < boardImage.getSize().y) 
                 {
-                    //boardImage.setPixel({x, y}, adjustPixel(boardImage.getPixel({x, y})));
                     boardImage.setPixel({x, y}, avgColor);
                 }
             }
@@ -175,6 +169,12 @@ void Board::changeSquarePixels(int oldRow, int oldCol, int newRow, int newCol, s
 void Board::draw(sf::RenderWindow& window) 
 {   
     window.draw(boardSprite);
+
+    if (showHighlights) 
+    {
+        window.draw(highlightSquare1);
+        window.draw(highlightSquare2);
+    }
 
     float offset = newHeight / 8.0f;
     float posX, posY;
@@ -218,7 +218,7 @@ void Board::flipBoard()
     }
 
     flipBoardTexture();
-    
+
     isFlipped = !isFlipped;
 }
 
@@ -481,25 +481,22 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
 
     isMoveCorrect = false;
     hasEnPassantMade = false;
-    bool hasMoved = true;
 
     bool isPieceCaptured;
 
     if (!isDragging || !selectedPiece) 
         return;
 
-    int oldRow = selectedPieceOriginalPos.y;
-    int oldCol = selectedPieceOriginalPos.x;
+    oldRow = selectedPieceOriginalPos.y;
+    oldCol = selectedPieceOriginalPos.x;
 
-    int newRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
-    int newCol = (mousePos.x - newPosX) / (newHeight / 8.0f);
+    float tempRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
+    float tempCol = (mousePos.x - newPosX) / (newHeight / 8.0f);
+
+    newRow = std::max(0, std::min(7, static_cast<int>(tempRow)));
+    newCol = std::max(0, std::min(7, static_cast<int>(tempCol)));
 
     std::unique_ptr<Piece> tempPiece;
-
-    if (selectedPieceOriginalPos.y == newRow && selectedPieceOriginalPos.x == newCol) 
-    {
-        hasMoved = false;
-    }
 
     if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
@@ -528,7 +525,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
             {
                 isMoveCorrect = true;
                 boardTexture = initialBoardTexture;
-                changeSquarePixels(oldRow, oldCol, newRow, newCol, boardTexture);
+                changeSquarePixels();
             }
         }
     }
@@ -538,10 +535,6 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
         if (selectedPiece) 
         {   
             board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
-            if (hasMoved)
-            {
-                soundManager.playSoundOnce("incorrect_move");
-            }
         }
     }
 

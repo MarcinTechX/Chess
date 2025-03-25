@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <thread>
+#include <iomanip>
 #include "board.hpp"
 #include "piece.hpp"
 #include "pawn.hpp"
@@ -71,7 +72,8 @@ void loadSounds(SoundManager& soundManager)
 {
     if (!soundManager.loadSound("move", "./Sounds/move.ogg") ||
         !soundManager.loadSound("capture", "./Sounds/capture.ogg") ||
-        !soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg")) {
+        !soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg")) 
+    {
         std::cerr << "Failed to load sound!" << std::endl;
     }
 }
@@ -81,7 +83,9 @@ int main()
     sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
 
     sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen);
-
+    window.setVerticalSyncEnabled(true);
+    //window.setFramerateLimit(165);
+    
     sf::Texture boardTexture;
 
     std::map<std::string, sf::Texture> textures;
@@ -102,7 +106,7 @@ int main()
     boardRef.setupBoard();
 
     while (window.isOpen()) 
-    {         
+    {       
         while (const std::optional event = window.pollEvent()) 
         {
             if (event->is<sf::Event::Closed>()) 
@@ -135,7 +139,6 @@ int main()
                         do 
                         {
                             promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window));
-                            sf::sleep(sf::milliseconds(10));
 
                         } while (promotionPiece == Piece::Type::None); 
 
