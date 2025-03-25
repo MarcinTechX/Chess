@@ -1,3 +1,6 @@
 .vscode/
 chess.exe
 PGNs/
+dist/*
+obj/*
+*.local.bat
