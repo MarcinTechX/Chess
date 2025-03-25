@@ -35,9 +35,6 @@ Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf
     this->boardSprite.setTexture(this->boardTexture);
     this->boardImage = this->boardTexture.copyToImage();
 
-    highlightSquare1.setFillColor(sf::Color(0, 0, 0, 0));
-    highlightSquare2.setFillColor(sf::Color(0, 0, 0, 0));
-
     updateBoard(window);
 }
 
@@ -170,12 +167,6 @@ void Board::draw(sf::RenderWindow& window)
 {   
     window.draw(boardSprite);
 
-    if (showHighlights) 
-    {
-        window.draw(highlightSquare1);
-        window.draw(highlightSquare2);
-    }
-
     float offset = newHeight / 8.0f;
     float posX, posY;
 
@@ -202,8 +193,40 @@ void Board::draw(sf::RenderWindow& window)
     updateBoard(window);
 }
 
-void Board::flipBoard()
+sf::Vector2f Board::calculateBoardPosition(int row, int col) 
 {
+    float squareSize = newHeight / 8.0f;
+    if (isFlipped)  
+    {
+        return sf::Vector2f
+        (
+            newPosX + (7 - col) * squareSize,
+            newPosY + row * squareSize
+        );
+    }
+    return sf::Vector2f
+    (
+        newPosX + col * squareSize,
+        newPosY + (7 - row) * squareSize
+    );
+}
+
+void Board::flipBoard()
+{   
+    if (isDragging && selectedPiece) 
+    {
+        float squareSize = newHeight / 8.0f;
+        float originalX = newPosX + selectedPieceOriginalPos.x * squareSize;
+        float originalY = newPosY + (7 - selectedPieceOriginalPos.y) * squareSize;
+        
+        selectedPiece->setPosition(originalX, originalY);
+        
+        board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+        
+        isDragging = false;
+        selectedPiece = nullptr;
+    }
+
     for (int i = 0; i < 4; i++) 
     {
         std::swap(board[i], board[7 - i]);
@@ -242,6 +265,21 @@ void Board::flipBoardTexture()
     if (!boardTexture.loadFromImage(boardImage)) 
     {
         std::cerr << "Failed to load flipped texture!" << std::endl;
+    }
+}
+
+void Board::returnSelectedPieceToOriginalPos() 
+{
+    if (isDragging && selectedPiece) 
+    {
+        sf::Vector2f originalPos = calculateBoardPosition
+        (
+            selectedPieceOriginalPos.y, 
+            selectedPieceOriginalPos.x
+        );
+        selectedPiece->setPosition(originalPos.x, originalPos.y);
+        board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
+        isDragging = false;
     }
 }
 
@@ -469,7 +507,7 @@ void Board::handleMouseClick(const sf::Vector2i& mousePos)
 }
 
 void Board::handleMouseMove(const sf::Vector2i& mousePos) 
-{
+{ 
     if (isDragging && selectedPiece) {
         selectedPiece->setPosition(mousePos.x - (newHeight / 16.0f), mousePos.y - (newHeight/ 16.0f)); 
     }

@@ -26,8 +26,10 @@ public:
     void setScaleForAllPieces();
     void changeSquarePixels(); 
     void draw(sf::RenderWindow& window);
+    sf::Vector2f calculateBoardPosition(int row, int col); 
     void flipBoard();
-    void flipBoardTexture();
+    void flipBoardTexture();    
+    void returnSelectedPieceToOriginalPos(); 
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     sf::FloatRect drawPromotionWindow(sf::RenderWindow& window);
     bool isMouseInPromotionWindow(sf::RenderWindow& window);
@@ -56,10 +58,8 @@ public:
     bool isMoveCorrect;
     bool hasEnPassantMade;
 
-protected:
-    std::vector<std::unique_ptr<Piece>> pieces;
-
 private:
+    std::vector<std::unique_ptr<Piece>> pieces;
     sf::Vector2<unsigned int> desktopSize;
     float newHeight;
     float newPosX, newPosY;
@@ -71,8 +71,6 @@ private:
     sf::Texture boardTexture;
     sf::Sprite boardSprite;
     std::map<std::string, sf::Texture> textures;
-    sf::RectangleShape highlightSquare1, highlightSquare2;
-    bool showHighlights = false;
     sf::FloatRect promotionWindowPos;
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
