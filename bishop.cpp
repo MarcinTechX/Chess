@@ -9,7 +9,7 @@ Bishop::Bishop(const sf::Texture& texture, float x, float y, Color color, Board&
         this->boardGame = &boardGame;
     }
 
-bool Bishop::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
+bool Bishop::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove)
 {
     if (boardGame->board[endRow][endCol] != nullptr) 
     {    

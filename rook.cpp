@@ -7,7 +7,7 @@ Rook::Rook(const sf::Texture& texture, float x, float y, Color color, Board& boa
 
     }
 
-bool Rook::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
+bool Rook::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
 {
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {

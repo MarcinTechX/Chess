@@ -7,7 +7,7 @@ Knight::Knight(const sf::Texture& texture, float x, float y, Color color, Board&
 
     }
 
-bool Knight::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
+bool Knight::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
 {
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {

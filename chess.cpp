@@ -82,10 +82,13 @@ int main()
 {
     sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
 
-    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen);
+    sf::ContextSettings settings;
+    settings.antiAliasingLevel = 16;
+
+    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen, settings);
     window.setVerticalSyncEnabled(true);
     //window.setFramerateLimit(165);
-    
+
     sf::Texture boardTexture;
 
     std::map<std::string, sf::Texture> textures;
@@ -122,7 +125,10 @@ int main()
                 if (keyPressed->scancode == sf::Keyboard::Scancode::F)
                 {   
                     boardRef.flipBoard();
-                    boardRef.getPromotePawnPos();
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scancode::S)
+                {   
+                    boardRef.showLegalMoves = !boardRef.showLegalMoves;
                 }
             }
             else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) 
@@ -143,7 +149,6 @@ int main()
                         } while (promotionPiece == Piece::Type::None); 
 
                         boardRef.promotePawn(promotionPiece);
-
                         boardRef.promotionActive = false;
                     }
                 }

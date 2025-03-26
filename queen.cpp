@@ -7,7 +7,7 @@ Queen::Queen(const sf::Texture& texture, float x, float y, Color color, Board& b
 
     }
 
-bool Queen::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
+bool Queen::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
 {
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {

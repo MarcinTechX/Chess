@@ -21,7 +21,7 @@
 Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager)
     : isWhiteTurn(true), boardSprite(boardTexture), desktopSize(desktopSize), soundManager(soundManager), textures(textures), 
     isFlipped(false), isInitialBoardTextureSet(false), promotionActive(false), rounds(0), roundEnPassant(0), whiteKingChecked(false), blackKingChecked(false), 
-    isMoveCorrect(false), hasEnPassantMade(false)
+    isMoveCorrect(false), hasEnPassantMade(false), showLegalMoves(false)
 {
     for (int row = 0; row < 8; row++) 
     {
@@ -154,7 +154,7 @@ void Board::changeSquarePixels()
         }
     };
 
-    changePixelsInSquare(oldRow, oldCol);  
+    changePixelsInSquare(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x);  
     changePixelsInSquare(newRow, newCol); 
     
     if (!boardTexture.loadFromImage(boardImage))  
@@ -184,9 +184,13 @@ void Board::draw(sf::RenderWindow& window)
             }
         }
     }
-
+    
     if (isDragging && selectedPiece) 
-    {
+    {   
+        if (showLegalMoves)
+        {
+            drawPossibleMoves(window);
+        }
         selectedPiece->draw(window);
     }
 
@@ -268,19 +272,152 @@ void Board::flipBoardTexture()
     }
 }
 
-void Board::returnSelectedPieceToOriginalPos() 
-{
-    if (isDragging && selectedPiece) 
+void Board::drawPossibleMoves(sf::RenderWindow& window)
+{   
+    sf::Image boardImage = boardTexture.copyToImage();  
+    sf::Image boardImageOriginal = initialBoardTexture.copyToImage();  
+
+    unsigned int squareWidth = boardImage.getSize().x / 8;
+    unsigned int squareHeight = boardImage.getSize().y / 8;
+
+    sf::Color pixel1 = boardImageOriginal.getPixel({0, 0});  
+    sf::Color pixel2 = boardImageOriginal.getPixel({(squareWidth), 0});  
+
+    int avgRed = (pixel1.r + pixel2.r) / 2;
+    int avgGreen = (pixel1.g + pixel2.g) / 2;
+    int avgBlue = (pixel1.b + pixel2.b) / 2;
+
+    sf::Color avgColor(avgRed, avgGreen, avgBlue);
+
+    if (selectedPiece) 
     {
-        sf::Vector2f originalPos = calculateBoardPosition
-        (
-            selectedPieceOriginalPos.y, 
-            selectedPieceOriginalPos.x
-        );
-        selectedPiece->setPosition(originalPos.x, originalPos.y);
-        board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
-        isDragging = false;
+        for (const auto& move : possibleMoves) 
+        {
+            int row = move.first;
+            int col = move.second;
+
+            sf::CircleShape circle(newHeight / 32.0f);
+            circle.setOrigin({circle.getRadius(), circle.getRadius()});
+            circle.setFillColor(sf::Color(255 - avgRed, 255 - avgGreen, 255 - avgBlue, 192));
+            circle.setPosition({newPosX + col * newHeight / 8.0f + newHeight / 16.0f, newPosY + (7 - row) * newHeight / 8.0f + newHeight / 16.0f});
+            window.draw(circle);
+        }
     }
+}
+
+std::vector<std::pair<int, int>> Board::getPossibleMovesForPiece(int row, int col)  
+{  
+    possibleMoves.clear();
+    
+    Piece* piecePtr = selectedPiece.get();
+    if (!piecePtr) return possibleMoves;
+    
+    Piece::Color pieceColor = piecePtr->getColor();
+    bool isKing = (piecePtr->getType() == Piece::Type::King);
+
+    int kingRow = -1, kingCol = -1;
+    for (int r = 0; r < 8; r++) 
+    {
+        for (int c = 0; c < 8; c++) 
+        {
+            if (board[r][c] && 
+               board[r][c]->getType() == Piece::Type::King && 
+               board[r][c]->getColor() == pieceColor)
+            {
+                kingRow = r;
+                kingCol = c;
+                break;
+            }
+        }
+        if(kingRow != -1) break;
+    }
+
+    for (int destRow = 0; destRow < 8; destRow++) 
+    {
+        for (int destCol = 0; destCol < 8; destCol++) 
+        {
+            if (!piecePtr->canMove(row, col, destRow, destCol, true)) 
+                continue;
+
+            if (isKing)
+            {
+                bool squareUnderAttack = false;
+                for (int r = 0; r < 8 && !squareUnderAttack; r++) 
+                {
+                    for (int c = 0; c < 8 && !squareUnderAttack; c++) 
+                    {
+                        if (board[r][c] && board[r][c]->getColor() != pieceColor)
+                        {
+                            if (board[r][c]->canMove(r, c, destRow, destCol, true)) 
+                            {
+                                squareUnderAttack = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (!squareUnderAttack)
+                {
+                    possibleMoves.push_back({destRow, destCol});
+                }
+                continue;
+            }
+
+            Piece* tempBoard[8][8];
+            for (int i = 0; i < 8; i++) 
+                for (int j = 0; j < 8; j++) 
+                    tempBoard[i][j] = board[i][j] ? board[i][j].get() : nullptr;
+
+            tempBoard[destRow][destCol] = tempBoard[row][col];
+            tempBoard[row][col] = nullptr;
+
+            bool kingInDanger = false;
+            for (int r = 0; r < 8 && !kingInDanger; r++) 
+            {
+                for (int c = 0; c < 8 && !kingInDanger; c++) 
+                {
+                    if (tempBoard[r][c] && tempBoard[r][c]->getColor() != pieceColor)
+                    {
+                        if (tempBoard[r][c]->canMove(r, c, kingRow, kingCol, true)) 
+                        {
+                            bool isBlocked = false;
+                            int dr = (kingRow > r) ? 1 : (kingRow < r) ? -1 : 0;
+                            int dc = (kingCol > c) ? 1 : (kingCol < c) ? -1 : 0;
+                            
+                            if (dr != 0 || dc != 0)
+                            {
+                                int checkRow = r + dr;
+                                int checkCol = c + dc;
+                                while (checkRow != kingRow || checkCol != kingCol)
+                                {
+                                    if (checkRow == destRow && checkCol == destCol || tempBoard[checkRow][checkCol] != nullptr)
+                                    {
+                                        isBlocked = true;
+                                        break;
+                                    }
+                                    checkRow += dr;
+                                    checkCol += dc;
+                                }
+                            }
+                            if (!isBlocked)
+                            {
+                                kingInDanger = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!kingInDanger)
+            {
+                possibleMoves.push_back({destRow, destCol});
+            }
+        }
+    }
+
+    return possibleMoves;
 }
 
 std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
@@ -417,8 +554,7 @@ Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos)
                     return pieceTypes[7 - rowMouse];
                 }
             }
-            else 
-            if (rowMouse >= 0 && rowMouse < 4)
+            else if (rowMouse >= 0 && rowMouse < 4)
             {
                 return pieceTypes[rowMouse];
             }
@@ -432,7 +568,7 @@ Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos)
                     return pieceTypes[rowMouse];
                 }
             }
-            if (rowMouse <= 7 && rowMouse > 3)
+            else if (rowMouse <= 7 && rowMouse > 3)
             {
                 return pieceTypes[7 - rowMouse];
             }
@@ -484,7 +620,9 @@ void Board::promotePawn(Piece::Type promotionPiece)
 }
 
 void Board::handleMouseClick(const sf::Vector2i& mousePos) 
-{
+{   
+    possibleMoves.clear();
+    
     for (int row = 0; row < 8; row++) 
     {
         for (int col = 0; col < 8; col++) 
@@ -497,6 +635,7 @@ void Board::handleMouseClick(const sf::Vector2i& mousePos)
                     {
                         selectedPiece = std::move(board[row][col]);
                         selectedPieceOriginalPos = {col, row};
+                        getPossibleMovesForPiece(row, col);
                         isDragging = true;
                         return;
                     }
@@ -525,9 +664,6 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
     if (!isDragging || !selectedPiece) 
         return;
 
-    oldRow = selectedPieceOriginalPos.y;
-    oldCol = selectedPieceOriginalPos.x;
-
     float tempRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
     float tempCol = (mousePos.x - newPosX) / (newHeight / 8.0f);
 
@@ -538,7 +674,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
 
     if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
-        if (selectedPiece->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol)) 
+        if (selectedPiece->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, false)) 
         {  
             tempPiece = std::move(board[newRow][newCol]);
             board[newRow][newCol] = std::move(selectedPiece);
@@ -657,7 +793,7 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
             {
                 if (piece->getColor() != kingColor) 
                 {
-                    if (piece->canMove(r, c, row, col)) 
+                    if (piece->canMove(r, c, row, col, false)) 
                     {
                         return true; 
                     }
@@ -700,7 +836,7 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
 
     return true;
 }
-
+/*
 sf::Color Board::adjustPixel(const sf::Color& color) 
 {
     ColorConverter::RGB rgb = {color.r, color.g, color.b};
@@ -715,6 +851,7 @@ sf::Color Board::adjustPixel(const sf::Color& color)
 
     return sf::Color(newR, newG, newB, color.a);
 }
+*/
 
 
 

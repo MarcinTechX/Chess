@@ -9,7 +9,7 @@ Pawn::Pawn(const sf::Texture& texture, float x, float y, Color color, Board& boa
 
     }
 
-bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol) 
+bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
 {   
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {
@@ -68,12 +68,16 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol)
                 startRow == (boardGame->isFlipped ? (opponentPawn->getColor() == Color::White ? 4 : 3)
                                                   : (opponentPawn->getColor() == Color::White ? 3 : 4)) && 
                 boardGame->board[endRow][endCol] == nullptr) 
-            {
-                boardGame->board[startRow][endCol].reset();
-                boardGame->hasEnPassantMade = true;
+            {   
+                if(!testMove)
+                {
+                    boardGame->board[startRow][endCol].reset();
+                    boardGame->hasEnPassantMade = true;
+                }
                 return true;
             }
         }        
     }
     return false;
 }
+

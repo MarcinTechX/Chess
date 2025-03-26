@@ -18,19 +18,14 @@
 class Board 
 {
 public:
-    Board();
     explicit Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager);
     ~Board();
-    void updateBoard(sf::RenderWindow& window); 
+    void updateBoard(sf::RenderWindow& window);
     void setupBoard();
-    void setScaleForAllPieces();
-    void changeSquarePixels(); 
     void draw(sf::RenderWindow& window);
-    sf::Vector2f calculateBoardPosition(int row, int col); 
-    void flipBoard();
-    void flipBoardTexture();    
-    void returnSelectedPieceToOriginalPos(); 
-    std::tuple<Piece::Color, int, int> getPromotePawnPos();
+    void flipBoard(); 
+    void drawPossibleMoves(sf::RenderWindow& window);
+    std::vector<std::pair<int, int>> getPossibleMovesForPiece(int row, int col);
     sf::FloatRect drawPromotionWindow(sf::RenderWindow& window);
     bool isMouseInPromotionWindow(sf::RenderWindow& window);
     Piece::Type getPromotionPiece(const sf::Vector2i& mousePos);
@@ -38,27 +33,27 @@ public:
     void handleMouseClick(const sf::Vector2i& mousePos);
     void handleMouseMove(const sf::Vector2i& mousePos);
     void handleMouseRelease(const sf::Vector2i& mousePos);
-    std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
-    bool isKingInCheck(int row, int col, Piece::Color kingColor); 
     bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
-    sf::Color adjustPixel(const sf::Color& color);
 
-    bool isWhiteTurn;
     unsigned int rounds;
     unsigned int roundEnPassant;
-    bool whiteKingChecked;
-    bool blackKingChecked;
     std::array<std::array<std::unique_ptr<Piece>, 8>, 8> board;
-    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> boardCopy;
-    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> flippedBoard;
     sf::RectangleShape promotionWindow;
-    std::map<std::string, sf::Sprite> promotionSprites;
     bool promotionActive;
     bool isFlipped;
-    bool isMoveCorrect;
     bool hasEnPassantMade;
+    bool showLegalMoves;
 
 private:
+    void setScaleForAllPieces();
+    void changeSquarePixels(); 
+    sf::Vector2f calculateBoardPosition(int row, int col); 
+    void flipBoardTexture();    
+    std::tuple<Piece::Color, int, int> getPromotePawnPos();
+    std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
+    bool isKingInCheck(int row, int col, Piece::Color kingColor); 
+    //sf::Color adjustPixel(const sf::Color& color);
+
     std::vector<std::unique_ptr<Piece>> pieces;
     sf::Vector2<unsigned int> desktopSize;
     float newHeight;
@@ -71,13 +66,18 @@ private:
     sf::Texture boardTexture;
     sf::Sprite boardSprite;
     std::map<std::string, sf::Texture> textures;
+    bool whiteKingChecked;
+    bool blackKingChecked;
+    bool isMoveCorrect;
+    bool isWhiteTurn;
     sf::FloatRect promotionWindowPos;
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
     bool isDragging = false;
     SoundManager& soundManager;
     int lastRoundIndex;
-    int newRow, newCol, oldRow, oldCol;
+    int newRow, newCol;
+    std::vector<std::pair<int, int>> possibleMoves;
 };
 
 #endif
