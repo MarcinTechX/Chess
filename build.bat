@@ -3,9 +3,9 @@ if exist build.local.bat (
     call build.local.bat
 ) 
 if "%SFML_DIR%"=="" (
-    echo Nie zdefiniowano ścierzki do SFML'a !!!
-    echo   Utwórz plik build.local.bat z zawartością "set SFML_DIR=..."
-    echo   Lub zdefiniuj zmienną środowiskową SFML_DIR
+    echo Nie zdefiniowano scierzki do SFML'a !!!
+    echo   Utworz plik "build.local.bat" z zawartoscia "set SFML_DIR=<tu wstaw scierzke>"
+    echo   Lub zdefiniuj zmienna srodowiskowa SFML_DIR, ze scierzka do folderu SFML
     exit /b 1
 )
 echo SFML_DIR: %SFML_DIR%
@@ -18,11 +18,11 @@ set OUTPUT=dist\chess.exe
 :::::::::: BUILD :::::::::::
 
 @echo on
-g++ %SOURCES% -o %OUTPUT% -I%SFML_DIR%\include -L%SFML_DIR%\lib -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-system
+g++ %SOURCES% -o %OUTPUT% -O3 -I%SFML_DIR%\include -L%SFML_DIR%\lib -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-system %*
 @echo off
 
 if ERRORLEVEL 1 (
-    exit /b %errorlevel%
+    exit /B %errorlevel%
 )
 
 echo Compilation Success!
