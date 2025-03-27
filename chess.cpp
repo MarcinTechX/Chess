@@ -78,12 +78,20 @@ void loadSounds(SoundManager& soundManager)
     }
 }
 
+void loadFonts(sf::Font& font)
+{
+    if (!font.openFromFile("./Fonts/OpenSans-Bold.ttf"))
+    {
+        std::cerr << "Failed to load fonts" << std::endl;
+    }
+}
+
 int main()
 {
     sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
 
     sf::ContextSettings settings;
-    settings.antiAliasingLevel = 16;
+    settings.antiAliasingLevel = 8;
 
     sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen, settings);
     window.setVerticalSyncEnabled(true);
@@ -95,15 +103,19 @@ int main()
 
     SoundManager soundManager;
 
+    sf::Font font;
+
     std::thread loadBoardThread(loadBoard, std::ref(boardTexture));
     std::thread loadPiecesThread(loadPieces, std::ref(textures));
     std::thread loadSoundsThread(loadSounds, std::ref(soundManager));    
+    std::thread loadFontsThread(loadFonts, std::ref(font));
 
     loadBoardThread.join();
     loadPiecesThread.join();    
     loadSoundsThread.join();
+    loadFontsThread.join();
 
-    Board board(window, desktopSize, boardTexture, textures, soundManager);  
+    Board board(window, desktopSize, boardTexture, textures, soundManager, font);  
     Board& boardRef = board; 
 
     boardRef.setupBoard();

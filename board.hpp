@@ -18,10 +18,11 @@
 class Board 
 {
 public:
-    explicit Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager);
+    explicit Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager, sf::Font& font);
     ~Board();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
+    void drawTextOnChessboard(sf::RenderWindow& window);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
     void drawPossibleMoves(sf::RenderWindow& window);
@@ -56,16 +57,20 @@ private:
 
     std::vector<std::unique_ptr<Piece>> pieces;
     sf::Vector2<unsigned int> desktopSize;
+    sf::Vector2u lastWindowSize;
     float newHeight;
     float newPosX, newPosY;
-    unsigned intscreenWidth, screenHeight;
+    unsigned int screenWidth, screenHeight;
+    unsigned int squareWidth, squareHeight;
+    sf::Color pixel1, pixel2;
     sf::Image boardImage;
     sf::Image boardImageOriginal;
     sf::Texture initialBoardTexture; 
-    bool isInitialBoardTextureSet = false;
     sf::Texture boardTexture;
     sf::Sprite boardSprite;
     std::map<std::string, sf::Texture> textures;
+    sf::Font font;
+    std::vector<sf::Text> texts;
     bool whiteKingChecked;
     bool blackKingChecked;
     bool isMoveCorrect;
