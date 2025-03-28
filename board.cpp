@@ -189,10 +189,7 @@ void Board::draw(sf::RenderWindow& window)
 
     drawTextOnChessboard(window);
 
-    if (!isDragging)
-    {
-        drawKingChecked(window);
-    }
+    drawKingChecked(window);
 
     float offset = newHeight / 8.0f;
     float posX, posY;
