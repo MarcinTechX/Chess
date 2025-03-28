@@ -24,7 +24,7 @@ void loadBoard(sf::Texture& boardTexture)
         std::cerr << "Failed to load board!" << std::endl;
     }
 }
-
+/*
 void loadPieces(std::map<std::string, sf::Texture>& textures)
 {
     sf::Image image;
@@ -65,6 +65,30 @@ void loadPieces(std::map<std::string, sf::Texture>& textures)
         {
             std::cerr << "Failed to load texture for " << key << std::endl;
         }
+    }
+}
+*/
+void loadPieces(std::map<std::string, sf::Texture>& textures)
+{
+    if (!textures["white-king"].loadFromFile("./Images/pieces/white-king.png") ||
+        !textures["white-pawn"].loadFromFile("./Images/pieces/white-pawn.png") ||
+        !textures["white-queen"].loadFromFile("./Images/pieces/white-queen.png") ||
+        !textures["white-rook"].loadFromFile("./Images/pieces/white-rook.png") ||
+        !textures["white-bishop"].loadFromFile("./Images/pieces/white-bishop.png") ||
+        !textures["white-knight"].loadFromFile("./Images/pieces/white-knight.png") ||
+        !textures["black-king"].loadFromFile("./Images/pieces/black-king.png") ||
+        !textures["black-pawn"].loadFromFile("./Images/pieces/black-pawn.png") ||
+        !textures["black-queen"].loadFromFile("./Images/pieces/black-queen.png") ||
+        !textures["black-rook"].loadFromFile("./Images/pieces/black-rook.png") ||
+        !textures["black-bishop"].loadFromFile("./Images/pieces/black-bishop.png") ||
+        !textures["black-knight"].loadFromFile("./Images/pieces/black-knight.png")) 
+    {
+        std::cerr << "Failed to load textures!" << std::endl;
+    }
+
+    for (auto& texture : textures) 
+    {
+        texture.second.setSmooth(true);
     }
 }
 
@@ -119,6 +143,8 @@ int main()
     Board& boardRef = board; 
 
     boardRef.setupBoard();
+
+    sf::Clock time;
 
     while (window.isOpen()) 
     {       
@@ -188,7 +214,7 @@ int main()
         if (boardRef.promotionActive)
         {
             boardRef.drawPromotionWindow(window);
-        }
+        }   
 
         window.display(); 
     }

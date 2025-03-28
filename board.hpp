@@ -18,10 +18,14 @@
 class Board 
 {
 public:
-    explicit Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager, sf::Font& font);
+    explicit Board( sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, 
+                    sf::Texture>& textures, SoundManager& soundManager, sf::Font& font);
     ~Board();
+    void getKingInCheckImage(sf::RenderWindow& window);
+    bool loadShader();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
+    void drawKingChecked(sf::RenderWindow& window);
     void drawTextOnChessboard(sf::RenderWindow& window);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
@@ -70,9 +74,8 @@ private:
     sf::Sprite boardSprite;
     std::map<std::string, sf::Texture> textures;
     sf::Font font;
+    sf::Shader shader;
     std::vector<sf::Text> texts;
-    bool whiteKingChecked;
-    bool blackKingChecked;
     bool isMoveCorrect;
     bool isWhiteTurn;
     sf::FloatRect promotionWindowPos;

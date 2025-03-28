@@ -17,9 +17,10 @@
 #include "soundmanager.hpp"
 #include "colorconverter.hpp"
 
-Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, SoundManager& soundManager, sf::Font& font)
+Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, 
+    SoundManager& soundManager, sf::Font& font)
     : isWhiteTurn(true), boardSprite(boardTexture), desktopSize(desktopSize), soundManager(soundManager), textures(textures), font(font),
-    isFlipped(false), lastWindowSize({0,0}), promotionActive(false), rounds(0), roundEnPassant(0), whiteKingChecked(false), blackKingChecked(false), 
+    isFlipped(false), lastWindowSize({0,0}), promotionActive(false), rounds(0), roundEnPassant(0), 
     isMoveCorrect(false), hasEnPassantMade(false), showLegalMoves(false)
 {
     for (int row = 0; row < 8; row++) 
@@ -49,6 +50,22 @@ Board::~Board()
 
 }
 
+bool Board::loadShader()
+{
+    static bool shaderLoaded = false;
+    if (!shaderLoaded)
+    {
+        if (!shader.loadFromFile("check.frag", sf::Shader::Type::Fragment)) 
+        {
+            std::cerr << "Failed to load shader!" << std::endl;
+            return false;
+        }
+        shader.setUniform("maxDistance", newHeight / (256 * 8));
+        shaderLoaded = true;
+    }
+    return true;
+}
+
 void Board::updateBoard(sf::RenderWindow& window) 
 {   
     sf::Vector2u currentSize = window.getSize();
@@ -71,6 +88,11 @@ void Board::updateBoard(sf::RenderWindow& window)
     newPosY = (screenHeight - newHeight) / 2.0f;
 
     boardSprite.setPosition({newPosX, newPosY}); 
+}
+
+void Board::getKingInCheckImage(sf::RenderWindow& window)
+{
+    
 }
 
 void Board::setScaleForAllPieces() 
@@ -167,6 +189,11 @@ void Board::draw(sf::RenderWindow& window)
 
     drawTextOnChessboard(window);
 
+    if (!isDragging)
+    {
+        drawKingChecked(window);
+    }
+
     float offset = newHeight / 8.0f;
     float posX, posY;
 
@@ -195,6 +222,44 @@ void Board::draw(sf::RenderWindow& window)
     }
 
     updateBoard(window);
+}
+
+void Board::drawKingChecked(sf::RenderWindow& window)
+{   
+    if (!loadShader())
+    {
+        return;
+    }
+
+    float squareWidth = newHeight / 8.0f;
+    sf::Sprite spriteChecked((textures["white-king"]));
+
+    auto kingsPositions = getKingsPositions();
+    sf::Vector2i kingPos;
+    bool isKingChecked = false;
+
+    if (isKingInCheck(kingsPositions.first.y, kingsPositions.first.x, Piece::Color::White)) 
+    {
+        kingPos = kingsPositions.first;
+        spriteChecked.setTexture(textures["white-king"]);
+        isKingChecked = true;
+    } 
+    else if (isKingInCheck(kingsPositions.second.y, kingsPositions.second.x, Piece::Color::Black)) 
+    {
+        kingPos = kingsPositions.second;
+        spriteChecked.setTexture(textures["black-king"]);
+        isKingChecked = true;
+    }
+
+    if (isKingChecked)
+    {
+        sf::FloatRect bounds = spriteChecked.getGlobalBounds();
+        float scaleFactor = (newHeight / 8.0f) / bounds.size.x;
+        spriteChecked.setScale({scaleFactor, scaleFactor});
+
+        spriteChecked.setPosition({newPosX + kingPos.x * squareWidth, newPosY + (7 - kingPos.y) * squareWidth});
+        window.draw(spriteChecked, &shader);
+    }
 }
 
 void Board::drawTextOnChessboard(sf::RenderWindow& window)
@@ -711,8 +776,8 @@ void Board::handleMouseClick(const sf::Vector2i& mousePos)
                     {
                         selectedPiece = std::move(board[row][col]);
                         selectedPieceOriginalPos = {col, row};
-                        getPossibleMovesForPiece(row, col);
                         isDragging = true;
+                        getPossibleMovesForPiece(row, col);
                         return;
                     }
                 }
@@ -723,7 +788,8 @@ void Board::handleMouseClick(const sf::Vector2i& mousePos)
 
 void Board::handleMouseMove(const sf::Vector2i& mousePos) 
 { 
-    if (isDragging && selectedPiece) {
+    if (selectedPiece) 
+    {
         selectedPiece->setPosition(mousePos.x - (newHeight / 16.0f), mousePos.y - (newHeight/ 16.0f)); 
     }
 }
@@ -737,7 +803,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
 
     bool isPieceCaptured;
 
-    if (!isDragging || !selectedPiece) 
+    if (!selectedPiece) 
         return;
 
     float tempRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
@@ -824,7 +890,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
         }
     }
     
-    selectedPiece.reset();
+    //selectedPiece.reset();
     isDragging = false;
 }
 
