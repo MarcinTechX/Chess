@@ -56,7 +56,8 @@ private:
     void flipBoardTexture();    
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
-    //bool isKingInCheck(int row, int col, Piece::Color kingColor); 
+    //bool isKingInCheck2(int row, int col, Piece::Color kingColor); 
+    bool isKingInCheck(int kingRow, int kingCol, Piece::Color color, const std::vector<std::vector<std::unique_ptr<Piece>>>& tempBoard);
     bool isKingInCheck(int kingRow, int kingCol, Piece::Color kingColor);
     //sf::Color adjustPixel(const sf::Color& color);
 
