@@ -61,7 +61,7 @@ bool Piece::canMove(int startRow, int startCol, int endRow, int endCol, bool tes
     if (canMoveImpl(startRow, startCol, endRow, endCol, testMove)) 
     {   
         if (testMove)
-        {
+        {   
             return true;
         }
         else

@@ -56,7 +56,8 @@ private:
     void flipBoardTexture();    
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
-    bool isKingInCheck(int row, int col, Piece::Color kingColor); 
+    //bool isKingInCheck(int row, int col, Piece::Color kingColor); 
+    bool isKingInCheck(int kingRow, int kingCol, Piece::Color kingColor);
     //sf::Color adjustPixel(const sf::Color& color);
 
     std::vector<std::unique_ptr<Piece>> pieces;
@@ -81,10 +82,14 @@ private:
     sf::FloatRect promotionWindowPos;
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
-    bool isDragging = false;
     SoundManager& soundManager;
     int lastRoundIndex;
     int newRow, newCol;
+    bool isPieceSelected = false;
+    int previousRow, previousCol;
+    int nextRow = -1, nextCol = -1;
+    int clickCount = -1;
+    bool isDragging = false;
     std::vector<std::pair<int, int>> possibleMoves;
 };
 
