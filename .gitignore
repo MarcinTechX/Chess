@@ -2,4 +2,6 @@
 chess.exe
 dist/*
 obj/*
+build/*
+local.mk
 *.local.bat
