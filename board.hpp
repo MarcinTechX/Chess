@@ -21,7 +21,6 @@ public:
     explicit Board( sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, 
                     sf::Texture>& textures, SoundManager& soundManager, sf::Font& font);
     ~Board();
-    void getKingInCheckImage(sf::RenderWindow& window);
     bool loadShader();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
@@ -31,6 +30,8 @@ public:
     void flipBoard(); 
     void drawPossibleMoves(sf::RenderWindow& window);
     std::vector<std::pair<int, int>> getPossibleMovesForPiece(int row, int col);
+    std::vector<std::pair<int, int>> getPossibleMovesForPieceCopy(int row, int col);
+    std::pair<bool, bool> areAnyMovesAvailable();
     sf::FloatRect drawPromotionWindow(sf::RenderWindow& window);
     bool isMouseInPromotionWindow(sf::RenderWindow& window);
     Piece::Type getPromotionPiece(const sf::Vector2i& mousePos);
@@ -39,6 +40,7 @@ public:
     void handleMouseMove(const sf::Vector2i& mousePos);
     void handleMouseRelease(const sf::Vector2i& mousePos);
     bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
+    void playGameSound();
 
     unsigned int rounds;
     unsigned int roundEnPassant;
@@ -48,6 +50,7 @@ public:
     bool isFlipped;
     bool hasEnPassantMade;
     bool showLegalMoves;
+    bool soundPlayed = false;
 
 private:
     void setScaleForAllPieces();
@@ -56,8 +59,6 @@ private:
     void flipBoardTexture();    
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
-    //bool isKingInCheck2(int row, int col, Piece::Color kingColor); 
-    bool isKingInCheck(int kingRow, int kingCol, Piece::Color color, const std::vector<std::vector<std::unique_ptr<Piece>>>& tempBoard);
     bool isKingInCheck(int kingRow, int kingCol, Piece::Color kingColor);
     //sf::Color adjustPixel(const sf::Color& color);
 
@@ -92,6 +93,15 @@ private:
     int clickCount = -1;
     bool isDragging = false;
     std::vector<std::pair<int, int>> possibleMoves;
+    std::vector<std::pair<int, int>> possibleMovesCopy;
+    std::vector<std::pair<int, int>> whiteMoves;
+    std::vector<std::pair<int, int>> blackMoves;
+    bool whiteHasMoves = true;
+    bool blackHasMoves = true;
+    bool isPieceCaptured = false;
+    bool isWhiteKingChecked = false;
+    bool isBlackKingChecked = false;
+    bool isPawnGetPromotion = false;
 };
 
 #endif

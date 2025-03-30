@@ -90,11 +90,6 @@ void Board::updateBoard(sf::RenderWindow& window)
     boardSprite.setPosition({newPosX, newPosY}); 
 }
 
-void Board::getKingInCheckImage(sf::RenderWindow& window)
-{
-    
-}
-
 void Board::setScaleForAllPieces() 
 {
     for (auto& row : board) 
@@ -196,9 +191,14 @@ void Board::draw(sf::RenderWindow& window)
     bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
     bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
 
-    if ((isWhiteKingChecked || isBlackKingChecked) && !selectedPiece)
+    if ((isWhiteKingChecked || isBlackKingChecked) && lastRoundIndex == rounds)
     {
         drawKingChecked(window);
+    }
+
+    if (lastRoundIndex != rounds)
+    {
+        soundPlayed = false;
     }
 
     float offset = newHeight / 8.0f;
@@ -231,7 +231,11 @@ void Board::draw(sf::RenderWindow& window)
         }
     }
 
+    areAnyMovesAvailable();
+
     updateBoard(window);
+
+    lastRoundIndex = rounds;
 }
 
 void Board::drawKingChecked(sf::RenderWindow& window)
@@ -451,125 +455,123 @@ void Board::drawPossibleMoves(sf::RenderWindow& window)
     }
 }
 
-std::vector<std::pair<int, int>> Board::getPossibleMovesForPiece(int row, int col)  
-{  
+std::vector<std::pair<int, int>> Board::getPossibleMovesForPiece(int row, int col) 
+{   
     possibleMoves.clear();
     
-    Piece* piecePtr = selectedPiece.get();
-    if (!piecePtr) return possibleMoves;
-    
-    Piece::Color pieceColor = piecePtr->getColor();
-    bool isKing = (piecePtr->getType() == Piece::Type::King);
-
-    int kingRow = -1, kingCol = -1;
-    for (int r = 0; r < 8; r++) 
+    if (!board[row][col]) 
     {
-        for (int c = 0; c < 8; c++) 
-        {
-            if (board[r][c] && 
-               board[r][c]->getType() == Piece::Type::King && 
-               board[r][c]->getColor() == pieceColor)
-            {
-                kingRow = r;
-                kingCol = c;
-                break;
-            }
-        }
-        if(kingRow != -1) break;
+        return possibleMoves; 
     }
 
-    for (int destRow = 0; destRow < 8; destRow++) 
+    Piece* originalPiece = board[row][col].get(); 
+
+    for (int r = 0; r < 8; r++)
     {
-        for (int destCol = 0; destCol < 8; destCol++) 
+        for (int c = 0; c < 8; c++)
         {
-            if (!piecePtr->canMove(row, col, destRow, destCol, true)) 
-                continue;
+            if (originalPiece->canMove(row, col, r, c, true)) 
+            {  
+                std::unique_ptr<Piece> tempPiece = std::move(board[r][c]);
+                board[r][c] = std::move(board[row][col]);
+                board[row][col] = nullptr;
 
-            if (isKing)
-            {
-                bool squareUnderAttack = false;
-                for (int r = 0; r < 8 && !squareUnderAttack; r++) 
+                auto kingsPositions = getKingsPositions();
+                sf::Vector2i whiteKingPos = kingsPositions.first;
+                sf::Vector2i blackKingPos = kingsPositions.second;
+
+                bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
+                bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
+
+                if (!((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked))) 
                 {
-                    for (int c = 0; c < 8 && !squareUnderAttack; c++) 
-                    {
-                        if (board[r][c] && board[r][c]->getColor() != pieceColor)
-                        {
-                            if (board[r][c]->canMove(r, c, destRow, destCol, true)) 
-                            {
-                                squareUnderAttack = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                if (!squareUnderAttack)
-                {
-                    possibleMoves.push_back({destRow, destCol});
-                }
-                continue;
-            }
+                    possibleMoves.push_back({r, c});
+                } 
 
-            Piece* tempBoard[8][8];
-            for (int i = 0; i < 8; i++) 
-                for (int j = 0; j < 8; j++) 
-                    tempBoard[i][j] = board[i][j] ? board[i][j].get() : nullptr;
-
-            tempBoard[destRow][destCol] = tempBoard[row][col];
-            tempBoard[row][col] = nullptr;
-
-            bool kingInDanger = false;
-            for (int r = 0; r < 8 && !kingInDanger; r++) 
-            {
-                for (int c = 0; c < 8 && !kingInDanger; c++) 
-                {
-                    if (tempBoard[r][c] && tempBoard[r][c]->getColor() != pieceColor)
-                    {
-                        if (tempBoard[r][c]->canMove(r, c, kingRow, kingCol, true)) 
-                        {
-                            if (tempBoard[r][c]->getType() == Piece::Type::Knight) 
-                            {
-                                kingInDanger = true;
-                                break;
-                            }
-                    
-                            bool isBlocked = false;
-                            int dr = (kingRow > r) ? 1 : (kingRow < r) ? -1 : 0;
-                            int dc = (kingCol > c) ? 1 : (kingCol < c) ? -1 : 0;
-                            
-                            if (dr != 0 || dc != 0)
-                            {
-                                int checkRow = r + dr;
-                                int checkCol = c + dc;
-                                while (checkRow != kingRow || checkCol != kingCol)
-                                {
-                                    if (checkRow == destRow && checkCol == destCol || tempBoard[checkRow][checkCol] != nullptr)
-                                    {
-                                        isBlocked = true;
-                                        break;
-                                    }
-                                    checkRow += dr;
-                                    checkCol += dc;
-                                }
-                            }
-                            if (!isBlocked)
-                            {
-                                kingInDanger = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!kingInDanger)
-            {
-                possibleMoves.push_back({destRow, destCol});
+                board[row][col] = std::move(board[r][c]);
+                board[r][c] = std::move(tempPiece); 
             }
         }
     }
 
-    return possibleMoves;
+    return possibleMoves; 
+}
+
+std::vector<std::pair<int, int>> Board::getPossibleMovesForPieceCopy(int row, int col) 
+{    
+    possibleMovesCopy.clear();
+
+    if (!board[row][col]) 
+    {
+        return possibleMovesCopy; 
+    }
+
+    Piece* originalPiece = board[row][col].get(); 
+
+    for (int r = 0; r < 8; r++)
+    {
+        for (int c = 0; c < 8; c++)
+        {
+            if (originalPiece->canMove(row, col, r, c, true)) 
+            {  
+                std::unique_ptr<Piece> tempPiece = std::move(board[r][c]);
+                board[r][c] = std::move(board[row][col]);
+                board[row][col] = nullptr;
+
+                auto kingsPositions = getKingsPositions();
+                sf::Vector2i whiteKingPos = kingsPositions.first;
+                sf::Vector2i blackKingPos = kingsPositions.second;
+
+                bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
+                bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
+
+                if (!((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked))) 
+                {
+                    possibleMovesCopy.push_back({r, c});
+                } 
+
+                board[row][col] = std::move(board[r][c]);
+                board[r][c] = std::move(tempPiece); 
+            }
+        }
+    }
+
+    return possibleMovesCopy; 
+}
+
+std::pair<bool, bool> Board::areAnyMovesAvailable()
+{   
+    whiteHasMoves = true;
+    blackHasMoves = true;
+
+    possibleMovesCopy.clear(); 
+    whiteMoves.clear();
+    blackMoves.clear();
+
+    for (int row = 0; row < 8; row++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            if (board[row][col])
+            {
+                std::vector<std::pair<int, int>> moves = getPossibleMovesForPieceCopy(row, col);
+
+                if (board[row][col]->getColor() == Piece::Color::White)
+                {
+                    whiteMoves.insert(whiteMoves.end(), moves.begin(), moves.end());
+                }
+                else
+                {
+                    blackMoves.insert(blackMoves.end(), moves.begin(), moves.end());
+                }
+            }
+        }
+    }
+
+    whiteHasMoves = !whiteMoves.empty();
+    blackHasMoves = !blackMoves.empty();
+
+    return {whiteHasMoves, blackHasMoves};
 }
 
 std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
@@ -768,8 +770,8 @@ void Board::promotePawn(Piece::Type promotionPiece)
         board[row][col] = std::move(newPiece);
     }
 
-    isWhiteTurn = !isWhiteTurn;
     rounds++;
+    isWhiteTurn = !isWhiteTurn;
 
     promotionActive = false;
 }
@@ -800,13 +802,13 @@ void Board::handleMouseClick(const sf::Vector2i& mousePos)
                             selectedPiece = std::move(board[row][col]);
                         }
                         else 
-                        {
+                        {   
+                            getPossibleMovesForPiece(row, col);
                             selectedPiece = std::move(board[row][col]);
                             isPieceSelected = true;
                             previousRow = row;
                             previousCol = col;
                             selectedPieceOriginalPos = {col, row};
-                            getPossibleMovesForPiece(row, col);
                         }
                     }
                 }
@@ -830,6 +832,10 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
 
     isMoveCorrect = false;
     hasEnPassantMade = false;
+    isPieceCaptured = false;
+    isWhiteKingChecked = false;
+    isBlackKingChecked = false;
+    isPawnGetPromotion = false;
 
     float tempRow = 8 - (mousePos.y - newPosY) / (newHeight / 8.0f);
     float tempCol = (mousePos.x - newPosX) / (newHeight / 8.0f);
@@ -860,7 +866,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
     if (!selectedPiece)
         return;
 
-    bool isPieceCaptured;
+    isPieceCaptured;
     std::unique_ptr<Piece> tempPiece;
 
     if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
@@ -874,10 +880,8 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
             sf::Vector2i whiteKingPos = kingsPositions.first;
             sf::Vector2i blackKingPos = kingsPositions.second;
 
-            bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
-            bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
-
-            isPieceCaptured = (tempPiece != nullptr) || hasEnPassantMade;
+            isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
+            isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
 
             if ((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked)) 
             {
@@ -892,6 +896,8 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
             }
         }
     }
+
+    isPieceCaptured = (tempPiece != nullptr) || hasEnPassantMade;
     
     if (!isMoveCorrect) 
     {   
@@ -925,7 +931,8 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
 
         if ((pieceColor == Piece::Color::White && newRow == promotionRowWhite) || 
             (pieceColor == Piece::Color::Black && newRow == promotionRowBlack))
-        {
+        {   
+            isPawnGetPromotion = true;
             promotionActive = true;
         }
     }
@@ -937,35 +944,18 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
     bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
     bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
 
-    if (isWhiteTurn && isBlackKingChecked)
-    {
-        std::cout << "Czarny szach" << std::endl;
-    }
-
-    if (!isWhiteTurn && isWhiteKingChecked)
-    {
-        std::cout << "Biały szach" << std::endl;
-    }
-
     if (isMoveCorrect)
     {   
         if (!(board[newRow][newCol]->getType() == Piece::Type::Pawn && (newRow == 0 || newRow == 7)))
         {
             isWhiteTurn = !isWhiteTurn;
             rounds++;
-            lastRoundIndex = rounds;
             isPieceSelected = false;
             clickCount = 0;
         }
-        if (isPieceCaptured)
-        {
-            soundManager.playSoundOnce("capture");
-        }
-        else if (!isPieceCaptured)
-        {   
-            soundManager.playSoundOnce("move");
-        }
     }
+
+    getPossibleMovesForPiece(newRow, newCol);
 
     isDragging = false;
 }
@@ -1020,106 +1010,7 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
     }
     return false;
 }
-/*
-bool Board::isKingInCheck(int row, int col, Piece::Color kingColor) 
-{
-    Piece::Color opponentColor = (kingColor == Piece::Color::White) ? Piece::Color::Black : Piece::Color::White;
 
-    int pawnDirection = (opponentColor == Piece::Color::White) ? -1 : 1;
-    if (isFlipped)
-    {
-        pawnDirection = -pawnDirection;
-    }
-    if (row + pawnDirection >= 0 && row + pawnDirection < 8) 
-    {
-        if ((col - 1 >= 0 && board[row + pawnDirection][col - 1] && 
-             board[row + pawnDirection][col - 1]->getType() == Piece::Type::Pawn &&
-             board[row + pawnDirection][col - 1]->getColor() == opponentColor) ||
-            (col + 1 < 8 && board[row + pawnDirection][col + 1] && 
-             board[row + pawnDirection][col + 1]->getType() == Piece::Type::Pawn &&
-             board[row + pawnDirection][col + 1]->getColor() == opponentColor)) 
-        {
-            return true;
-        }
-    }
-
-    int knightMoves[8][2] = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};
-    for (auto& move : knightMoves) 
-    {
-        int r = row + move[0], c = col + move[1];
-        if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] && 
-            board[r][c]->getType() == Piece::Type::Knight && 
-            board[r][c]->getColor() == opponentColor) 
-            {
-                return true;
-            }
-    }
-
-    int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-    for (auto& dir : directions) 
-    {
-        int r = row, c = col;
-        while (true) {
-            r += dir[0];
-            c += dir[1];
-            if (r < 0 || r >= 8 || c < 0 || c >= 8) break;
-
-            if (board[r][c]) 
-            {
-                if ((board[r][c]->getColor() == opponentColor) && 
-                    (board[r][c]->getType() == Piece::Type::Rook || 
-                     board[r][c]->getType() == Piece::Type::Queen)) 
-                    {
-                        return true;
-                    }
-                if (board[r][c]->getType() != Piece::Type::None) break;
-            }
-        }
-    }
-
-    directions[0][0] = -1; directions[0][1] = -1;
-    directions[1][0] = 1; directions[1][1] = 1;
-    directions[2][0] = -1; directions[2][1] = 1;
-    directions[3][0] = 1; directions[3][1] = -1;
-
-    for (auto& dir : directions) 
-    {
-        int r = row, c = col;
-        while (true) {
-            r += dir[0];
-            c += dir[1];
-            if (r < 0 || r >= 8 || c < 0 || c >= 8) break;
-
-            if (board[r][c])    
-            {
-                if ((board[r][c]->getColor() == opponentColor) && 
-                    (board[r][c]->getType() == Piece::Type::Bishop || 
-                     board[r][c]->getType() == Piece::Type::Queen)) 
-                    {
-                        return true;
-                    }
-                if (board[r][c]->getType() != Piece::Type::None) break;
-            }
-        }
-    }
-
-    for (int i = -1; i <= 1; ++i) 
-    {
-        for (int j = -1; j <= 1; ++j) 
-        {
-            int r = row + i, c = col + j;
-            if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
-                board[r][c] && board[r][c]->getType() == Piece::Type::King && 
-                board[r][c]->getColor() == opponentColor) 
-                {
-                    return true;
-                }
-        }
-    }
-
-    return false;
-}
-*/
 bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor) 
 {
     int flippedTargetCol = isFlipped ? (targetCol == 2 ? 5 : 1) : targetCol;
@@ -1151,6 +1042,39 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
     }
 
     return true;
+}
+
+void Board::playGameSound() 
+{   
+    if (lastRoundIndex == rounds && !soundPlayed && rounds > 0)
+
+    {
+        if ((!isWhiteTurn && !blackHasMoves && isBlackKingChecked) || (isWhiteTurn && !whiteHasMoves && isWhiteKingChecked))
+        {
+            soundManager.playSoundOnce("checkmate");
+            soundPlayed = true; 
+        }
+        else if (isWhiteKingChecked || isBlackKingChecked)
+        {
+            soundManager.playSoundOnce("check");
+            soundPlayed = true;
+        }
+        else if (isPieceCaptured)
+        {
+            soundManager.playSoundOnce("capture");
+            soundPlayed = true;
+        }
+        else if ((isWhiteTurn && !whiteHasMoves) || (!isWhiteTurn && !blackHasMoves))
+        {
+            soundManager.playSoundOnce("stalemate");
+            soundPlayed = true;
+        }
+        else if (!isPieceCaptured)
+        {   
+            soundManager.playSoundOnce("move");
+            soundPlayed = true;
+        }
+    }
 }
 
 /*

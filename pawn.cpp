@@ -60,41 +60,30 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
         }
 
         //en passant
-        if (!testMove)
+        if (abs(startCol - endCol) == 1 && endRow == startRow + direction) 
         {
-            if (boardGame->board[startRow][endCol] && boardGame->board[startRow][endCol]->getType() == Type::Pawn) 
-            {   
-                auto opponentPawn = dynamic_cast<Pawn*>(boardGame->board[startRow][endCol].get());
-                if (opponentPawn && opponentPawn->getColor() != pieceColor &&
-                    boardGame->rounds == boardGame->roundEnPassant + 1 &&
-                    opponentPawn->movesCount == 1 &&
-                    opponentPawn->roundEnPassant == boardGame->roundEnPassant &&
-                    startRow == (boardGame->isFlipped ? (opponentPawn->getColor() == Color::White ? 4 : 3)
-                                                      : (opponentPawn->getColor() == Color::White ? 3 : 4)) && 
-                    boardGame->board[endRow][endCol] == nullptr) 
-                {   
-                    boardGame->board[startRow][endCol].reset();
-                    movesCount++;
-                    return true;
-                }
-            }        
-        }
-        else
-        {
-            if (boardGame->board[startRow][endCol] && boardGame->board[startRow][endCol]->getType() == Type::Pawn) 
+            auto* opponentPiece = boardGame->board[startRow][endCol].get();
+            
+            if (opponentPiece && opponentPiece->getType() == Type::Pawn) 
             {
-                auto opponentPawn = dynamic_cast<Pawn*>(boardGame->board[startRow][endCol].get());
-                if (opponentPawn && opponentPawn->getColor() != pieceColor &&
-                    boardGame->rounds == boardGame->roundEnPassant + 1 &&
+                auto* opponentPawn = dynamic_cast<Pawn*>(opponentPiece);
+
+                if (opponentPawn && 
+                    opponentPawn->getColor() != pieceColor &&
                     opponentPawn->movesCount == 1 &&
-                    opponentPawn->roundEnPassant == boardGame->roundEnPassant &&
+                    boardGame->rounds == opponentPawn->roundEnPassant + 1 &&
                     startRow == (boardGame->isFlipped ? (opponentPawn->getColor() == Color::White ? 4 : 3)
-                                                      : (opponentPawn->getColor() == Color::White ? 3 : 4)) && 
+                                                    : (opponentPawn->getColor() == Color::White ? 3 : 4)) &&
                     boardGame->board[endRow][endCol] == nullptr) 
                 {   
+                    boardGame->hasEnPassantMade = true;
+                    if (!testMove) 
+                    {
+                        boardGame->board[startRow][endCol].reset();
+                    }
                     return true;
                 }
-            }        
+            }
         }
     }
     return false;

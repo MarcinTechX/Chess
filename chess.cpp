@@ -96,7 +96,10 @@ void loadSounds(SoundManager& soundManager)
 {
     if (!soundManager.loadSound("move", "./Sounds/move.ogg") ||
         !soundManager.loadSound("capture", "./Sounds/capture.ogg") ||
-        !soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg")) 
+        !soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg") ||
+        !soundManager.loadSound("check", "./Sounds/check.ogg") ||
+        !soundManager.loadSound("checkmate", "./Sounds/checkmate.ogg") ||
+        !soundManager.loadSound("stalemate", "./Sounds/stalemate.ogg"))
     {
         std::cerr << "Failed to load sound!" << std::endl;
     }
@@ -208,6 +211,8 @@ int main()
         }
 
         window.clear(sf::Color(128,128,128));
+
+        boardRef.playGameSound();
 
         boardRef.draw(window);
 
