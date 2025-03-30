@@ -3,4 +3,6 @@ chess.exe
 PGNs/
 dist/*
 obj/*
+build/*
+local.mk
 *.local.bat
