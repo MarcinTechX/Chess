@@ -93,7 +93,7 @@ endef
 ################# TARGETS #################
 
 # Tu taka specialna składnia, określająca, że te targety są wirtualne, nie są to konkretne pliki
-.PHONY: default build_and_install build install run clean dir_structure
+.PHONY: default build_and_install build install run_only run clean dir_structure
 # domyślnie ma sie wykonać target "build_and_install" 
 default: build_and_install
 
@@ -131,7 +131,10 @@ ${INSTALLED_ASSETS}: ${INSTALL_DIR}/%: ./%
 	$(call copytoinstall,$*)
 
 # Reguła, która po prostu uruchamia wynikowy .exe
-run:
+run_only:
+	${TARGET}
+
+run: build_and_install
 	${TARGET}
 
 # Usunięcie całego folderu z artefaktami kompilacji
