@@ -230,12 +230,12 @@ void Board::drawKingChecked(sf::RenderWindow& window, std::pair<sf::Vector2i, sf
     sf::Vector2i kingPos;
     const sf::Texture* kingTexture = nullptr;
 
-    if (isKingInCheck(kingsPositions.first.y, kingsPositions.first.x, Piece::Color::White)) 
+    if (isWhiteKingChecked) 
     {
         kingPos = kingsPositions.first;
         kingTexture = &textures["white-king"];
     } 
-    else if (isKingInCheck(kingsPositions.second.y, kingsPositions.second.x, Piece::Color::Black)) 
+    else if (isBlackKingChecked) 
     {
         kingPos = kingsPositions.second;
         kingTexture = &textures["black-king"];
@@ -384,6 +384,11 @@ void Board::flipBoard()
             std::swap(board[i][j], board[i][7 - j]);
         }
     }
+
+    kingsPositions.first.y = 7 - kingsPositions.first.y;
+    kingsPositions.first.x = 7 - kingsPositions.first.x;
+    kingsPositions.second.y = 7 - kingsPositions.second.y;
+    kingsPositions.second.x = 7 - kingsPositions.second.x;
 
     flipBoardTexture();
 
@@ -828,7 +833,7 @@ void Board::handleMouseMove(const sf::Vector2i& mousePos)
     }
 }
 
-void Board::handleMouseRelease(const sf::Vector2i& mousePos) 
+void Board::handleMouseRelease(const sf::Vector2i& mousePos)  
 {   
     isMoveCorrect = false;
     hasEnPassantMade = false;
@@ -871,6 +876,11 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
     {   
         board[selectedPieceOriginalPos.y][selectedPieceOriginalPos.x] = std::move(selectedPiece);
 
+        if (newRow != selectedPieceOriginalPos.y || newCol != selectedPieceOriginalPos.x)
+        {
+            isPieceSelected = false;
+            clickCount = 0;
+        }
         if (isDragging && (newRow != selectedPieceOriginalPos.y || newCol != selectedPieceOriginalPos.x))
         {
             isPieceSelected = false;
@@ -965,8 +975,8 @@ bool Board::checkIsMoveCorrect(int newRow, int newCol)
             sf::Vector2i whiteKingPos = kingsPositions.first;
             sf::Vector2i blackKingPos = kingsPositions.second;
 
-            isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
-            isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
+            bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
+            bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
 
             if ((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked)) 
             {
