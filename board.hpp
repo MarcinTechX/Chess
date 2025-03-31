@@ -24,7 +24,7 @@ public:
     bool loadShader();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
-    void drawKingChecked(sf::RenderWindow& window);
+    void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
     void drawTextOnChessboard(sf::RenderWindow& window);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
@@ -36,9 +36,13 @@ public:
     bool isMouseInPromotionWindow(sf::RenderWindow& window);
     Piece::Type getPromotionPiece(const sf::Vector2i& mousePos);
     void promotePawn(Piece::Type promotionPiece);
-    void handleMouseClick(const sf::Vector2i& mousePos);
+    void clickOnPiece(const sf::Vector2i& mousePos);
+    void handleMouseClick(sf::RenderWindow& window);
     void handleMouseMove(const sf::Vector2i& mousePos);
     void handleMouseRelease(const sf::Vector2i& mousePos);
+    std::pair<float, float> getTempPos(const sf::Vector2i& mousePos);
+    bool isPosOnCheckboard(float tempRow, float tempCol);
+    bool checkIsMoveCorrect(int newRow, int newCol);
     bool canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor); 
     void playGameSound();
 
@@ -51,6 +55,7 @@ public:
     bool hasEnPassantMade;
     bool showLegalMoves;
     bool soundPlayed = false;
+    bool isPawnGetPromotion = false;
 
 private:
     void setScaleForAllPieces();
@@ -101,7 +106,11 @@ private:
     bool isPieceCaptured = false;
     bool isWhiteKingChecked = false;
     bool isBlackKingChecked = false;
-    bool isPawnGetPromotion = false;
+    std::unique_ptr<Piece> tempPiece;
+    bool isCheckMate = false;
+    int checkRound = 0;
+    bool isKingStillInCheck = false;
+    std::pair<sf::Vector2i, sf::Vector2i> kingsPositions;
 };
 
 #endif

@@ -120,7 +120,7 @@ int main()
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 8;
 
-    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Windowed, settings);
+    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen, settings);
     window.setVerticalSyncEnabled(true);
     //window.setFramerateLimit(165);
 
@@ -150,7 +150,7 @@ int main()
     sf::Clock time;
 
     while (window.isOpen()) 
-    {       
+    {        
         while (const std::optional event = window.pollEvent()) 
         {
             if (event->is<sf::Event::Closed>()) 
@@ -176,22 +176,7 @@ int main()
             {
                 if (mousePressed->button == sf::Mouse::Button::Left)
                 {
-                    if (!boardRef.promotionActive)
-                    {
-                        boardRef.handleMouseClick(sf::Mouse::getPosition(window));
-                    }
-                    else if (boardRef.isMouseInPromotionWindow(window))
-                    {
-                        Piece::Type promotionPiece;
-                        do 
-                        {
-                            promotionPiece = boardRef.getPromotionPiece(sf::Mouse::getPosition(window));
-
-                        } while (promotionPiece == Piece::Type::None); 
-
-                        boardRef.promotePawn(promotionPiece);
-                        boardRef.promotionActive = false;
-                    }
+                    boardRef.handleMouseClick(window);
                 }
             }
             else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) 
@@ -211,8 +196,6 @@ int main()
         }
 
         window.clear(sf::Color(128,128,128));
-
-        boardRef.playGameSound();
 
         boardRef.draw(window);
 
