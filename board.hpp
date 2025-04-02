@@ -26,6 +26,8 @@ public:
     void setupBoard();
     void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
     void drawTextOnChessboard(sf::RenderWindow& window);
+    void drawStoreMovingPositions(sf::RenderWindow& window);
+    void drawSelectedPiecePlace(sf::RenderWindow& window);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
     void drawPossibleMoves(sf::RenderWindow& window);
@@ -111,6 +113,12 @@ private:
     int checkRound = 0;
     bool isKingStillInCheck = false;
     std::pair<sf::Vector2i, sf::Vector2i> kingsPositions;
+    std::vector<sf::RectangleShape> movingPositions;
+    sf::RectangleShape r1, r2;
+    int previousRowForMovingPos, previousColForMovingPos;
+    int newRowForMovingPos, newColForMovingPos;
+    sf::RectangleShape selectedPlace;
+    bool isSelectedPiece = false;
 };
 
 #endif

@@ -139,41 +139,90 @@ void Board::setupBoard()
 
 void Board::changeSquarePixels() 
 {      
-    boardImage = boardImageOriginal;
-
     int avgRed = (pixel1.r + pixel2.r) / 2;
     int avgGreen = (pixel1.g + pixel2.g) / 2;
     int avgBlue = (pixel1.b + pixel2.b) / 2;
 
     sf::Color avgColor(avgRed, avgGreen, avgBlue);
 
-    auto changePixelsInSquare = [&](int row, int col) 
-    {
-        int startX = col * squareWidth;
-        int startY = (7 - row) * squareHeight;
-        
-        for (int i = 0; i < squareWidth; i++) 
-        {
-            for (int j = 0; j < squareHeight; j++) 
-            {
-                unsigned int x = startX + i;
-                unsigned int y = startY + j;
+    movingPositions.clear();
 
-                if (x < boardImage.getSize().x && y < boardImage.getSize().y) 
-                {
-                    boardImage.setPixel({x, y}, avgColor);
-                }
-            }
-        }
-    };
+    float squareWidth = newHeight / 8.0;
+    float squareHeight = newHeight / 8.0;
 
-    changePixelsInSquare(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x);  
-    changePixelsInSquare(newRow, newCol); 
-    
-    if (!boardTexture.loadFromImage(boardImage))  
+    previousRowForMovingPos = previousRow;
+    previousColForMovingPos = previousCol;
+
+    newRowForMovingPos = newRow;
+    newColForMovingPos = newCol;
+
+    if (isFlipped)
     {
-        std::cerr << "Failed to load texture from modified image!" << std::endl;
+        previousRowForMovingPos = 7 - previousRowForMovingPos;
+        previousColForMovingPos = 7 - previousColForMovingPos;
+        newRowForMovingPos = 7 - newRowForMovingPos;
+        newColForMovingPos = 7 - newColForMovingPos;
     }
+
+    r1.setSize(sf::Vector2f({squareWidth, squareHeight}));
+    r1.setPosition({newPosX + previousColForMovingPos * squareWidth, newPosY + (7 - previousRowForMovingPos) * squareHeight});
+    r1.setFillColor(avgColor);
+
+    r2.setSize(sf::Vector2f({squareWidth, squareHeight}));
+    r2.setPosition({newPosX + newColForMovingPos * squareWidth, newPosY + (7 - newRowForMovingPos) * squareHeight});
+    r2.setFillColor(avgColor);
+
+    movingPositions.push_back(r1);
+    movingPositions.push_back(r2);
+}
+
+void Board::drawStoreMovingPositions(sf::RenderWindow& window)
+{   
+    if (isFlipped)
+    {   
+        float squareWidth = newHeight / 8.0;
+        float squareHeight = newHeight / 8.0;
+        
+        r1.setPosition({newPosX + (7 - previousColForMovingPos) * squareWidth, newPosY + previousRowForMovingPos * squareHeight});
+        r2.setPosition({newPosX + (7 - newColForMovingPos) * squareWidth, newPosY + newRowForMovingPos * squareHeight});
+    }
+    else
+    {
+        float squareWidth = newHeight / 8.0;
+        float squareHeight = newHeight / 8.0;
+        
+        r1.setPosition({newPosX + previousColForMovingPos * squareWidth, newPosY + (7 - previousRowForMovingPos) * squareHeight});
+        r2.setPosition({newPosX + newColForMovingPos * squareWidth, newPosY + (7 - newRowForMovingPos) * squareHeight});
+    }
+
+    window.draw(r1);
+    window.draw(r2);
+}
+
+void Board::drawSelectedPiecePlace(sf::RenderWindow& window)
+{    
+    int avgRed = (pixel1.r + pixel2.r) / 2;
+    int avgGreen = (pixel1.g + pixel2.g) / 2;
+    int avgBlue = (pixel1.b + pixel2.b) / 2;
+
+    sf::Color avgColor(255 - avgRed, 255 - avgGreen, 255 - avgBlue, 127);
+
+    float squareWidth = newHeight / 8.0;
+    float squareHeight = newHeight / 8.0;
+
+    selectedPlace.setSize(sf::Vector2f({squareWidth, squareHeight}));
+    selectedPlace.setPosition({newPosX + previousCol * squareWidth, newPosY + (7 - previousRow) * squareHeight});
+
+    if (isSelectedPiece)
+    {
+        selectedPlace.setFillColor(avgColor);
+    }
+    else
+    {
+        selectedPlace.setFillColor(sf::Color::Transparent);
+    }
+
+    window.draw(selectedPlace);
 }
 
 void Board::draw(sf::RenderWindow& window) 
@@ -181,6 +230,13 @@ void Board::draw(sf::RenderWindow& window)
     window.draw(boardSprite);
 
     drawTextOnChessboard(window);
+
+    if (selectedPiece || clickCount % 2 == 1) 
+    {
+        drawSelectedPiecePlace(window);
+    }
+
+    drawStoreMovingPositions(window);
 
     if (isWhiteKingChecked || isBlackKingChecked || isCheckMate)
     {
@@ -390,7 +446,7 @@ void Board::flipBoard()
     kingsPositions.second.y = 7 - kingsPositions.second.y;
     kingsPositions.second.x = 7 - kingsPositions.second.x;
 
-    flipBoardTexture();
+    isSelectedPiece = false;
 
     isFlipped = !isFlipped;
 }
@@ -788,6 +844,7 @@ void Board::clickOnPiece(const sf::Vector2i& mousePos)
                             getPossibleMovesForPiece(row, col);
                             selectedPiece = std::move(board[row][col]);
                             isPieceSelected = true;
+                            isSelectedPiece = true;
                             previousRow = row;
                             previousCol = col;
                             selectedPieceOriginalPos = {col, row};
