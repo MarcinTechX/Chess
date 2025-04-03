@@ -58,7 +58,6 @@ bool Board::loadShader()
             std::cerr << "Failed to load shader!" << std::endl;
             return false;
         }
-        shader.setUniform("maxDistance", newHeight / (256 * 8));
         shaderLoaded = true;
     }
     return true;

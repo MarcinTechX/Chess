@@ -63,7 +63,6 @@ private:
     void drawStoreMovingPositions(sf::RenderWindow& window);
     void drawSelectedPiecePlace(sf::RenderWindow& window);
     void changeSquarePixels(); 
-    void flipBoardTexture();    
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
     bool isKingInCheck(int kingRow, int kingCol, Piece::Color kingColor);
