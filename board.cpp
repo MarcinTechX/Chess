@@ -77,8 +77,8 @@ void Board::updateBoard(sf::RenderWindow& window)
     unsigned int shorterSide = std::min(screenWidth, screenHeight); 
 
     newHeight = shorterSide * 0.7f;
-    float scaleFactorY = newHeight / boardTexture.getSize().y;
-    float scaleFactorX = scaleFactorY * (boardTexture.getSize().x / boardTexture.getSize().y);
+    scaleFactorY = newHeight / boardTexture.getSize().y;
+    scaleFactorX = scaleFactorY * (boardTexture.getSize().x / boardTexture.getSize().y);
     boardSprite.setScale({scaleFactorX, scaleFactorY}); 
 
     float newWidth = boardTexture.getSize().x * scaleFactorX;
@@ -137,6 +137,20 @@ void Board::setupBoard()
     setScaleForAllPieces();
 }
 
+sf::Vector2i Board::getBoardPositionFromMouse(int mouseX, int mouseY)
+{
+    int offsetX = newPosX;
+    int offsetY = newPosY;
+
+    if (isFlipped)
+    {
+        mouseY = newPosY + newHeight - (mouseY - newPosY);
+        mouseX = newPosX + newHeight - (mouseX - newPosX);
+    }
+
+    return sf::Vector2i(mouseX, mouseY);
+}
+
 void Board::changeSquarePixels() 
 {      
     int avgRed = (pixel1.r + pixel2.r) / 2;
@@ -155,14 +169,6 @@ void Board::changeSquarePixels()
 
     newRowForMovingPos = newRow;
     newColForMovingPos = newCol;
-
-    if (isFlipped)
-    {
-        previousRowForMovingPos = 7 - previousRowForMovingPos;
-        previousColForMovingPos = 7 - previousColForMovingPos;
-        newRowForMovingPos = 7 - newRowForMovingPos;
-        newColForMovingPos = 7 - newColForMovingPos;
-    }
 
     r1.setSize(sf::Vector2f({squareWidth, squareHeight}));
     r1.setPosition({newPosX + previousColForMovingPos * squareWidth, newPosY + (7 - previousRowForMovingPos) * squareHeight});
@@ -209,9 +215,17 @@ void Board::drawSelectedPiecePlace(sf::RenderWindow& window)
 
     float squareWidth = newHeight / 8.0;
     float squareHeight = newHeight / 8.0;
-
+    
     selectedPlace.setSize(sf::Vector2f({squareWidth, squareHeight}));
-    selectedPlace.setPosition({newPosX + previousCol * squareWidth, newPosY + (7 - previousRow) * squareHeight});
+    
+    if (isFlipped)
+    {
+        selectedPlace.setPosition({newPosX + (7 - previousCol) * squareWidth, newPosY + previousRow * squareHeight});
+    }
+    else
+    {
+        selectedPlace.setPosition({newPosX + previousCol * squareWidth, newPosY + (7 - previousRow) * squareHeight});
+    }
 
     if (isPieceSelected)
     {
@@ -251,9 +265,12 @@ void Board::draw(sf::RenderWindow& window)
         for (int col = 0; col < 8; col++) 
         {
             if (board[row][col] && board[row][col] != selectedPiece) 
-            {          
-                posX = newPosX + col * offset;
-                posY = newPosY + (7 - row) * offset;
+            {   
+                int displayRow = isFlipped ? row : 7 - row;
+                int displayCol = isFlipped ? 7 - col : col;
+
+                posX = newPosX + displayCol * offset;
+                posY = newPosY + displayRow * offset;
 
                 board[row][col]->setPosition(posX, posY);
                 board[row][col]->draw(window);
@@ -307,7 +324,14 @@ void Board::drawKingChecked(sf::RenderWindow& window, std::pair<sf::Vector2i, sf
     float squareWidth = newHeight / 8.0f;
     float scaleFactor = squareWidth / std::max(spriteChecked.getGlobalBounds().size.x, 1.0f);
     spriteChecked.setScale({scaleFactor, scaleFactor});
-    spriteChecked.setPosition({newPosX + kingPos.x * squareWidth, newPosY + (7 - kingPos.y) * squareWidth});
+    if (isFlipped)
+    {
+        spriteChecked.setPosition({newPosX + (7 - kingPos.x) * squareWidth, newPosY + kingPos.y * squareWidth});
+    }
+    else
+    {
+        spriteChecked.setPosition({newPosX + kingPos.x * squareWidth, newPosY + (7 - kingPos.y) * squareWidth});
+    }
     
     window.draw(spriteChecked, &shader);
 }
@@ -393,28 +417,10 @@ void Board::drawTextOnChessboard(sf::RenderWindow& window)
     }
 }
 
-sf::Vector2f Board::calculateBoardPosition(int row, int col) 
-{
-    float squareSize = newHeight / 8.0f;
-    if (isFlipped)  
-    {
-        return sf::Vector2f
-        (
-            newPosX + (7 - col) * squareSize,
-            newPosY + row * squareSize
-        );
-    }
-    return sf::Vector2f
-    (
-        newPosX + col * squareSize,
-        newPosY + (7 - row) * squareSize
-    );
-}
-
 void Board::flipBoard()
 {       
     isPieceSelected = false;
-
+    
     if (selectedPiece) 
     {
         float squareSize = newHeight / 8.0f;
@@ -427,49 +433,12 @@ void Board::flipBoard()
         
         selectedPiece = nullptr;
     }
-
-    for (int i = 0; i < 4; i++) 
-    {
-        std::swap(board[i], board[7 - i]);
-    }
     
-    for (int i = 0; i < 8; i++) 
-    {
-        for (int j = 0; j < 4; j++) 
-        {
-            std::swap(board[i][j], board[i][7 - j]);
-        }
-    }
-
-    kingsPositions.first.y = 7 - kingsPositions.first.y;
-    kingsPositions.first.x = 7 - kingsPositions.first.x;
-    kingsPositions.second.y = 7 - kingsPositions.second.y;
-    kingsPositions.second.x = 7 - kingsPositions.second.x;
-
+    clickCount = 0;
+   
     isPieceSelected = false;
 
     isFlipped = !isFlipped;
-}
-
-void Board::flipBoardTexture()
-{
-    int width = boardImage.getSize().x;
-    int height = boardImage.getSize().y;
-
-    for (unsigned int row = 0; row < height / 2; row++) 
-    {
-        for (unsigned int col = 0; col < width; col++) 
-        {
-            sf::Color temp = boardImage.getPixel({col, row});
-            boardImage.setPixel({col, row}, boardImage.getPixel({width - col - 1, height - row - 1}));
-            boardImage.setPixel({width - col - 1, height - row - 1}, temp);
-        }
-    }
-
-    if (!boardTexture.loadFromImage(boardImage)) 
-    {
-        std::cerr << "Failed to load flipped texture!" << std::endl;
-    }
 }
 
 void Board::drawPossibleMoves(sf::RenderWindow& window)
@@ -484,8 +453,19 @@ void Board::drawPossibleMoves(sf::RenderWindow& window)
     {
         for (const auto& move : possibleMoves) 
         {
-            int row = move.first;
-            int col = move.second;
+            int row;
+            int col;
+
+            if (isFlipped)
+            {
+                row = 7 - move.first;
+                col = 7 - move.second;
+            }
+            else
+            {
+                row = move.first;
+                col = move.second;
+            }
 
             sf::CircleShape circle(newHeight / 32.0f);
             circle.setOrigin({circle.getRadius(), circle.getRadius()});
@@ -620,7 +600,6 @@ std::tuple<Piece::Color, int, int> Board::getPromotePawnPos()
     Piece::Color color = isWhiteTurn ? Piece::Color::White : Piece::Color::Black;
 
     int row = (color == Piece::Color::White) ? 7 : 0;
-    if (isFlipped) row = (color == Piece::Color::White) ? 0 : 7; 
 
     int col = -1;
 
@@ -651,7 +630,7 @@ sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window)
     {   
         if (isFlipped)
         {
-            promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 4) * newHeight / 8.0f});
+            promotionWindow.setPosition({newPosX + (7 - col) * newHeight / 8.0f, newPosY + (row - 3) * newHeight / 8.0f});
         }
         else
         {
@@ -662,7 +641,7 @@ sf::FloatRect Board::drawPromotionWindow(sf::RenderWindow& window)
     {           
         if (isFlipped)
         {
-            promotionWindow.setPosition({newPosX + col * newHeight / 8.0f, newPosY - (row - 7) * newHeight / 8.0f});
+            promotionWindow.setPosition({newPosX + (7 - col) * newHeight / 8.0f, newPosY + row * newHeight / 8.0f});
         }
         else
         {
@@ -721,7 +700,7 @@ bool Board::isMouseInPromotionWindow(sf::RenderWindow& window)
     return promotionWindowPos.contains({(float)mousePos.x, (float)(mousePos.y)});
 }
 
-Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos)
+Piece::Type Board::getPromotionPiece(sf::Vector2i mousePos)
 {   
     std::tuple<Piece::Color, int, int> pawnPos = getPromotePawnPos();
 
@@ -737,39 +716,21 @@ Piece::Type Board::getPromotionPiece(const sf::Vector2i& mousePos)
         Piece::Type::Bishop
     };
 
+    mousePos = getBoardPositionFromMouse(mousePos.x, mousePos.y);
+
     float iconSize = newHeight / 8.0f; 
     int rowMouse = (mousePos.y - newPosY) / iconSize;   
     int colMouse = (mousePos.x - newPosX) / iconSize;
-
+    
     if (colMouse == col)
-    {
+    {   
         if (color == Piece::Color::White)
         {
-            if (isFlipped)
-            {
-                if (rowMouse <= 7 && rowMouse > 3)
-                {
-                    return pieceTypes[7 - rowMouse];
-                }
-            }
-            else if (rowMouse >= 0 && rowMouse < 4)
-            {
-                return pieceTypes[rowMouse];
-            }
+            return pieceTypes[rowMouse];
         }
         else 
         {   
-            if (isFlipped)
-            {
-                if (rowMouse >= 0 && rowMouse < 4)
-                {
-                    return pieceTypes[rowMouse];
-                }
-            }
-            else if (rowMouse <= 7 && rowMouse > 3)
-            {
-                return pieceTypes[7 - rowMouse];
-            }
+            return pieceTypes[7 - rowMouse];
         }
     }
 
@@ -814,18 +775,18 @@ void Board::promotePawn(Piece::Type promotionPiece)
     isWhiteTurn = !isWhiteTurn;
 }
 
-void Board::clickOnPiece(const sf::Vector2i& mousePos) 
-{       
+void Board::clickOnPiece(sf::Vector2i mousePos) 
+{   
     for (int row = 0; row < 8; row++) 
     {
         for (int col = 0; col < 8; col++) 
         {
             if (board[row][col]) 
-            {
+            {   
                 if (board[row][col]->getColor() == (isWhiteTurn ? Piece::Color::White : Piece::Color::Black)) 
-                {   
+                {             
                     if (board[row][col]->contains(mousePos)) 
-                    {
+                    {   
                         if (previousRow == row && previousCol == col) 
                         {
                             clickCount++;
@@ -858,6 +819,14 @@ void Board::clickOnPiece(const sf::Vector2i& mousePos)
 
 void Board::handleMouseClick(sf::RenderWindow& window)
 {
+    if (isCheckMate || isStaleMate)
+    {
+        return;
+    }
+
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window); 
+    sf::Vector2i mousePosInv = getBoardPositionFromMouse(mousePos.x, mousePos.y);
+
     if (promotionActive)
     {
         if (isMouseInPromotionWindow(window))
@@ -881,9 +850,7 @@ void Board::handleMouseClick(sf::RenderWindow& window)
         return;
     }
 
-    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-
-    std::pair<float, float> tempPos = getTempPos(mousePos);
+    std::pair<float, float> tempPos = getTempPos(mousePosInv);
     int clickedRow = static_cast<int>(tempPos.first);
     int clickedCol = static_cast<int>(tempPos.second);
 
@@ -902,7 +869,7 @@ void Board::handleMouseClick(sf::RenderWindow& window)
     }
 }
 
-void Board::handleMouseMove(const sf::Vector2i& mousePos) 
+void Board::handleMouseMove(sf::Vector2i mousePos) 
 {   
     if (selectedPiece && !isCheckMate) 
     {
@@ -911,8 +878,9 @@ void Board::handleMouseMove(const sf::Vector2i& mousePos)
     }
 }
 
-void Board::handleMouseRelease(const sf::Vector2i& mousePos)  
+void Board::handleMouseRelease(sf::Vector2i mousePos)  
 {   
+    mousePos = getBoardPositionFromMouse(mousePos.x, mousePos.y);
     std::pair<float, float> tempPos = getTempPos(mousePos);
     float tempRow = tempPos.first;
     float tempCol = tempPos.second;
@@ -970,11 +938,6 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
     
         int promotionRowWhite = 7;
         int promotionRowBlack = 0;
-    
-        if (isFlipped) 
-        {
-            std::swap(promotionRowWhite, promotionRowBlack);
-        }
 
         if ((pieceColor == Piece::Color::White && newRow == promotionRowWhite) || 
             (pieceColor == Piece::Color::Black && newRow == promotionRowBlack))
@@ -1065,6 +1028,7 @@ bool Board::checkIsMoveCorrect(int newRow, int newCol)
                 board[newRow][newCol] = std::move(tempPiece);
                 if (!isCheckMate)
                 {
+                    clickCount = 0;
                     soundManager.playSoundOnce("incorrect_move");
                 }
             } 
@@ -1118,7 +1082,7 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
             {
                 if (piece->getColor() != kingColor) 
                 {
-                    if (piece->canMove(r, c, row, col, false)) 
+                    if (piece->canMove(r, c, row, col, true)) 
                     {
                         return true; 
                     }
@@ -1131,16 +1095,14 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
 
 bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColor) 
 {
-    int flippedTargetCol = isFlipped ? (targetCol == 2 ? 5 : 1) : targetCol;
-    int flippedMidCol = isFlipped ? (targetCol == 2 ? 4 : 2) : ((targetCol == 2) ? 3 : 5);
-    
-    int step = (flippedTargetCol > kingCol) ? 1 : -1;
+    int midCol = (targetCol == 2) ? 3 : 5;  
+    int step = (targetCol > kingCol) ? 1 : -1;  
 
-    for (int col = kingCol + step; col != flippedTargetCol; col += step) 
+    for (int col = kingCol + step; col != targetCol; col += step) 
     {
         if (board[row][col]) 
         {
-            return false; 
+            return false;  
         }
     }
 
@@ -1149,12 +1111,12 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
         return false;
     }
 
-    if (isKingInCheck(row, flippedMidCol, kingColor)) 
+    if (isKingInCheck(row, midCol, kingColor)) 
     {
         return false;
     }
 
-    if (isKingInCheck(row, flippedTargetCol, kingColor)) 
+    if (isKingInCheck(row, targetCol, kingColor)) 
     {
         return false;
     }
@@ -1185,6 +1147,7 @@ void Board::playGameSound()
         else if ((isWhiteTurn && !whiteHasMoves) || (!isWhiteTurn && !blackHasMoves))
         {
             soundManager.playSoundOnce("stalemate");
+            isStaleMate = true;
             soundPlayed = true;
         }
         else if (!isPieceCaptured)
