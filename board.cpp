@@ -205,7 +205,7 @@ void Board::drawSelectedPiecePlace(sf::RenderWindow& window)
     int avgGreen = (pixel1.g + pixel2.g) / 2;
     int avgBlue = (pixel1.b + pixel2.b) / 2;
 
-    sf::Color avgColor(255 - avgRed, 255 - avgGreen, 255 - avgBlue, 127);
+    sf::Color avgColor(avgRed, avgGreen, avgBlue);
 
     float squareWidth = newHeight / 8.0;
     float squareHeight = newHeight / 8.0;
@@ -213,7 +213,7 @@ void Board::drawSelectedPiecePlace(sf::RenderWindow& window)
     selectedPlace.setSize(sf::Vector2f({squareWidth, squareHeight}));
     selectedPlace.setPosition({newPosX + previousCol * squareWidth, newPosY + (7 - previousRow) * squareHeight});
 
-    if (isSelectedPiece)
+    if (isPieceSelected)
     {
         selectedPlace.setFillColor(avgColor);
     }
@@ -446,7 +446,7 @@ void Board::flipBoard()
     kingsPositions.second.y = 7 - kingsPositions.second.y;
     kingsPositions.second.x = 7 - kingsPositions.second.x;
 
-    isSelectedPiece = false;
+    isPieceSelected = false;
 
     isFlipped = !isFlipped;
 }
@@ -815,7 +815,7 @@ void Board::promotePawn(Piece::Type promotionPiece)
 }
 
 void Board::clickOnPiece(const sf::Vector2i& mousePos) 
-{   
+{       
     for (int row = 0; row < 8; row++) 
     {
         for (int col = 0; col < 8; col++) 
@@ -844,11 +844,11 @@ void Board::clickOnPiece(const sf::Vector2i& mousePos)
                             getPossibleMovesForPiece(row, col);
                             selectedPiece = std::move(board[row][col]);
                             isPieceSelected = true;
-                            isSelectedPiece = true;
                             previousRow = row;
                             previousCol = col;
                             selectedPieceOriginalPos = {col, row};
                         }
+                        return;
                     }
                 }
             }
@@ -858,26 +858,47 @@ void Board::clickOnPiece(const sf::Vector2i& mousePos)
 
 void Board::handleMouseClick(sf::RenderWindow& window)
 {
-    if (!promotionActive)
+    if (promotionActive)
     {
-        clickOnPiece(sf::Mouse::getPosition(window));
-    }
-    else if (promotionActive && isMouseInPromotionWindow(window))
-    {
-        Piece::Type promotionPiece;
-        do 
+        if (isMouseInPromotionWindow(window))
         {
-            promotionPiece = getPromotionPiece(sf::Mouse::getPosition(window));
+            Piece::Type promotionPiece;
+            do 
+            {
+                promotionPiece = getPromotionPiece(sf::Mouse::getPosition(window));
 
-        } while (promotionPiece == Piece::Type::None); 
+            } while (promotionPiece == Piece::Type::None); 
 
-        if (promotionPiece != Piece::Type::None)
-        {    
-            isPawnGetPromotion = true;
+            if (promotionPiece != Piece::Type::None)
+            {    
+                isPawnGetPromotion = true;
+                rounds++;
+            }
+
+            promotePawn(promotionPiece);
+            promotionActive = false;
         }
+        return;
+    }
 
-        promotePawn(promotionPiece);
-        promotionActive = false;
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+    std::pair<float, float> tempPos = getTempPos(mousePos);
+    int clickedRow = static_cast<int>(tempPos.first);
+    int clickedCol = static_cast<int>(tempPos.second);
+
+    if (clickedRow < 0 || clickedRow >= 8 || clickedCol < 0 || clickedCol >= 8)
+    {
+        return; 
+    }
+
+    if (board[clickedRow][clickedCol] && board[clickedRow][clickedCol]->getColor() == (isWhiteTurn ? Piece::Color::White : Piece::Color::Black))
+    {
+        clickOnPiece(mousePos); 
+    }
+    else if (isPieceSelected) 
+    {
+        handleMouseRelease(mousePos);
     }
 }
 
@@ -892,13 +913,6 @@ void Board::handleMouseMove(const sf::Vector2i& mousePos)
 
 void Board::handleMouseRelease(const sf::Vector2i& mousePos)  
 {   
-    isMoveCorrect = false;
-    hasEnPassantMade = false;
-    isPieceCaptured = false;
-    isWhiteKingChecked = false;
-    isBlackKingChecked = false;
-    soundPlayed = false;
-
     std::pair<float, float> tempPos = getTempPos(mousePos);
     float tempRow = tempPos.first;
     float tempCol = tempPos.second;
@@ -908,10 +922,15 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
         return;
     }
 
-    soundManager.stopAllSounds();
-
     newRow = std::max(0, std::min(7, static_cast<int>(tempRow)));
     newCol = std::max(0, std::min(7, static_cast<int>(tempCol)));
+
+    isMoveCorrect = false;
+    hasEnPassantMade = false;
+    isPieceCaptured = false;
+    isWhiteKingChecked = false;
+    isBlackKingChecked = false;
+    soundPlayed = false;
 
     if (!selectedPiece && clickCount % 2 == 1) 
     {
@@ -971,6 +990,7 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
             isWhiteTurn = !isWhiteTurn;
             isPieceSelected = false;
             clickCount = 0;
+            rounds++;
         }
     }
 
@@ -983,9 +1003,9 @@ void Board::handleMouseRelease(const sf::Vector2i& mousePos)
 
     areAnyMovesAvailable();
 
-    if ((isPawnGetPromotion || isMoveCorrect) && !isCheckMate)
+    if ((isPawnGetPromotion || isMoveCorrect) && !isCheckMate && !promotionActive)
     {  
-        rounds++;
+        soundManager.stopAllSounds();
         playGameSound();
     }
 
@@ -1021,7 +1041,11 @@ bool Board::checkIsMoveCorrect(int newRow, int newCol)
 {
     tempPiece;
 
-    if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
+    if (newRow == previousRow && newCol == previousCol)
+    {
+        isMoveCorrect = false;
+    }
+    else if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
         if (selectedPiece->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, false)) 
         {  

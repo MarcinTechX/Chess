@@ -24,10 +24,6 @@ public:
     bool loadShader();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
-    void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
-    void drawTextOnChessboard(sf::RenderWindow& window);
-    void drawStoreMovingPositions(sf::RenderWindow& window);
-    void drawSelectedPiecePlace(sf::RenderWindow& window);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
     void drawPossibleMoves(sf::RenderWindow& window);
@@ -61,6 +57,10 @@ public:
 
 private:
     void setScaleForAllPieces();
+    void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
+    void drawTextOnChessboard(sf::RenderWindow& window);
+    void drawStoreMovingPositions(sf::RenderWindow& window);
+    void drawSelectedPiecePlace(sf::RenderWindow& window);
     void changeSquarePixels(); 
     sf::Vector2f calculateBoardPosition(int row, int col); 
     void flipBoardTexture();    
@@ -118,7 +118,6 @@ private:
     int previousRowForMovingPos, previousColForMovingPos;
     int newRowForMovingPos, newColForMovingPos;
     sf::RectangleShape selectedPlace;
-    bool isSelectedPiece = false;
 };
 
 #endif
