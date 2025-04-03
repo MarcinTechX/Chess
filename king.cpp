@@ -1,13 +1,10 @@
 #include "king.hpp"
 #include "board.hpp"
 
-#include <iostream>
-
 King::King(const sf::Texture& texture, float x, float y, Color color, Board& boardGame)
     : Piece(texture, x, y, Type::King, color, boardGame)
-    {
-
-    }
+{
+}
 
 bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
 {  
@@ -26,12 +23,12 @@ bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
         int rookRightCol = 7;
         int newRookLeftCol = 3;
         int newRookRightCol = 5;
-    
+
         if (endCol == leftCol || endCol == rightCol) 
         {
             int rookCol = (endCol == leftCol) ? rookLeftCol : rookRightCol;
             auto& rook = boardGame->board[startRow][rookCol];
-    
+
             if (rook && rook->getType() == Piece::Type::Rook && rook->movesCount == 0) 
             {   
                 if (boardGame->canCastle(startRow, startCol, endCol, pieceColor)) 
@@ -47,14 +44,14 @@ bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
             }
         }
     }
-    
+
     for (int i = -1; i <= 1; i++) 
     {
         for (int j = -1; j <= 1; j++) 
         {
             int neighborRow = endRow + i;
             int neighborCol = endCol + j;
-    
+
             if (neighborRow >= 0 && neighborRow < 8 && neighborCol >= 0 && neighborCol < 8) 
             {
                 if (boardGame->board[neighborRow][neighborCol] && 
@@ -66,7 +63,7 @@ bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
             }
         }
     }
-    
+
     if (abs(endRow - startRow) <= 1 && abs(endCol - startCol) <= 1 && (!(abs(endRow - startRow) == 0 && abs(endCol - startCol) == 0)))
     {
         return true;
@@ -74,4 +71,3 @@ bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
 
     return false;
 }
-

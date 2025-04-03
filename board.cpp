@@ -1076,7 +1076,7 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
             {
                 if (piece->getColor() != kingColor) 
                 {
-                    if (piece->canMove(r, c, row, col, false)) 
+                    if (piece->canMove(r, c, row, col, true)) 
                     {
                         return true; 
                     }
@@ -1092,29 +1092,41 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
     int midCol = (targetCol == 2) ? 3 : 5;  
     int step = (targetCol > kingCol) ? 1 : -1;  
 
+    std::cout << "Checking castling for King at row " << row << ", col " << kingCol 
+              << " with target col " << targetCol << "\n";
+
+    // Check if there are any pieces between the king and the rook
     for (int col = kingCol + step; col != targetCol; col += step) 
     {
         if (board[row][col]) 
         {
+            std::cout << "Blocked by piece at position: (" << row << ", " << col << ")\n";
             return false;  
         }
     }
 
+    // Check if the king is in check
     if (isKingInCheck(row, kingCol, kingColor)) 
     {
+        std::cout << "King is in check at start position: (" << row << ", " << kingCol << ")\n";
         return false;
     }
 
+    // Check if the king would be in check when moving through the middle
     if (isKingInCheck(row, midCol, kingColor)) 
     {
+        std::cout << "King would be in check at position: (" << row << ", " << midCol << ")\n";
         return false;
     }
 
+    // Check if the king would be in check after castling
     if (isKingInCheck(row, targetCol, kingColor)) 
     {
+        std::cout << "King would be in check after castling to position: (" << row << ", " << targetCol << ")\n";
         return false;
     }
 
+    std::cout << "Castling is possible.\n";
     return true;
 }
 
