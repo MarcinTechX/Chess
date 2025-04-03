@@ -1,6 +1,8 @@
 #include "rook.hpp"
 #include "board.hpp"
 
+#include <iostream>
+
 Rook::Rook(const sf::Texture& texture, float x, float y, Color color, Board& boardGame)
     : Piece(texture, x, y, Type::Rook, color, boardGame)
     {
@@ -8,7 +10,7 @@ Rook::Rook(const sf::Texture& texture, float x, float y, Color color, Board& boa
     }
 
 bool Rook::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
-{
+{   
     if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
     {
         return false;

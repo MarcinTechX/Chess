@@ -24,10 +24,7 @@ public:
     bool loadShader();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
-    void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
-    void drawTextOnChessboard(sf::RenderWindow& window);
-    void drawStoreMovingPositions(sf::RenderWindow& window);
-    void drawSelectedPiecePlace(sf::RenderWindow& window);
+    sf::Vector2i getBoardPositionFromMouse(int mouseX, int mouseY);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
     void drawPossibleMoves(sf::RenderWindow& window);
@@ -36,12 +33,12 @@ public:
     std::pair<bool, bool> areAnyMovesAvailable();
     sf::FloatRect drawPromotionWindow(sf::RenderWindow& window);
     bool isMouseInPromotionWindow(sf::RenderWindow& window);
-    Piece::Type getPromotionPiece(const sf::Vector2i& mousePos);
+    Piece::Type getPromotionPiece(sf::Vector2i mousePos);
     void promotePawn(Piece::Type promotionPiece);
-    void clickOnPiece(const sf::Vector2i& mousePos);
+    void clickOnPiece(sf::Vector2i mousePos);
     void handleMouseClick(sf::RenderWindow& window);
-    void handleMouseMove(const sf::Vector2i& mousePos);
-    void handleMouseRelease(const sf::Vector2i& mousePos);
+    void handleMouseMove(sf::Vector2i mousePos);
+    void handleMouseRelease(sf::Vector2i mousePos);
     std::pair<float, float> getTempPos(const sf::Vector2i& mousePos);
     bool isPosOnCheckboard(float tempRow, float tempCol);
     bool checkIsMoveCorrect(int newRow, int newCol);
@@ -61,8 +58,11 @@ public:
 
 private:
     void setScaleForAllPieces();
+    void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
+    void drawTextOnChessboard(sf::RenderWindow& window);
+    void drawStoreMovingPositions(sf::RenderWindow& window);
+    void drawSelectedPiecePlace(sf::RenderWindow& window);
     void changeSquarePixels(); 
-    sf::Vector2f calculateBoardPosition(int row, int col); 
     void flipBoardTexture();    
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
@@ -76,6 +76,7 @@ private:
     float newPosX, newPosY;
     unsigned int screenWidth, screenHeight;
     unsigned int squareWidth, squareHeight;
+    float scaleFactorY, scaleFactorX;
     sf::Color pixel1, pixel2;
     sf::Image boardImage;
     sf::Image boardImageOriginal;
@@ -110,6 +111,7 @@ private:
     bool isBlackKingChecked = false;
     std::unique_ptr<Piece> tempPiece;
     bool isCheckMate = false;
+    bool isStaleMate = false;
     int checkRound = 0;
     bool isKingStillInCheck = false;
     std::pair<sf::Vector2i, sf::Vector2i> kingsPositions;
@@ -118,7 +120,6 @@ private:
     int previousRowForMovingPos, previousColForMovingPos;
     int newRowForMovingPos, newColForMovingPos;
     sf::RectangleShape selectedPlace;
-    bool isSelectedPiece = false;
 };
 
 #endif
