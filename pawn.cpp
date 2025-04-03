@@ -18,11 +18,6 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
 
     int direction = (pieceColor == Color::White) ? 1 : -1; 
 
-    if (boardGame->isFlipped)  
-    {
-        direction = -direction;
-    }
-
     if (startCol == endCol) {
 
         if (boardGame->board[endRow][endCol] != nullptr) 
@@ -72,8 +67,7 @@ bool Pawn::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
                     opponentPawn->getColor() != pieceColor &&
                     opponentPawn->movesCount == 1 &&
                     boardGame->rounds == opponentPawn->roundEnPassant + 1 &&
-                    startRow == (boardGame->isFlipped ? (opponentPawn->getColor() == Color::White ? 4 : 3)
-                                                    : (opponentPawn->getColor() == Color::White ? 3 : 4)) &&
+                    startRow ==  (opponentPawn->getColor() == Color::White ? 3 : 4) &&
                     boardGame->board[endRow][endCol] == nullptr) 
                 {   
                     boardGame->hasEnPassantMade = true;

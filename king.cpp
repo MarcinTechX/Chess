@@ -20,12 +20,12 @@ bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool 
 
     if (movesCount == 0 && startRow == endRow) 
     {
-        int leftCol = boardGame->isFlipped ? 5 : 2;
-        int rightCol = boardGame->isFlipped ? 1 : 6;
-        int rookLeftCol = boardGame->isFlipped ? 7 : 0;
-        int rookRightCol = boardGame->isFlipped ? 0 : 7;
-        int newRookLeftCol = boardGame->isFlipped ? 4 : 3;
-        int newRookRightCol = boardGame->isFlipped ? 2 : 5;
+        int leftCol = 2;
+        int rightCol = 6;
+        int rookLeftCol = 0;
+        int rookRightCol = 7;
+        int newRookLeftCol = 3;
+        int newRookRightCol = 5;
     
         if (endCol == leftCol || endCol == rightCol) 
         {
