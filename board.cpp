@@ -434,8 +434,9 @@ void Board::flipBoard()
         selectedPiece = nullptr;
     }
     
-   
     isPieceSelected = false;
+
+    clickCount = 0;
 
     isFlipped = !isFlipped;
 }
