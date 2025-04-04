@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <climits>
 #include <iostream>
 #include "piece.hpp"
 #include "pawn.hpp"
@@ -21,13 +22,7 @@ Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf
     isFlipped(false), lastWindowSize({0,0}), promotionActive(false), rounds(0), roundEnPassant(0), 
     isMoveCorrect(false), hasEnPassantMade(false), showLegalMoves(false)
 {
-    for (int row = 0; row < 8; row++) 
-    {
-        for (int col = 0; col < 8; col++) 
-        {
-            board[row][col] = nullptr;
-        }
-    }
+    resetBoard();
 
     this->boardTexture = boardTexture;
     this->initialBoardTexture = boardTexture;
@@ -130,10 +125,73 @@ void Board::setupBoard()
 
     for (int col = 0; col < 8; col++) 
     {
-        board[6][col] = std::make_unique<Pawn>(textures.at("black-pawn"), col, 6, Piece::Color::Black, *this);
+       board[6][col] = std::make_unique<Pawn>(textures.at("black-pawn"), col, 6, Piece::Color::Black, *this);
     }
 
     setScaleForAllPieces();
+
+    addGamePosition();
+    isPiecesEnoughToCheckmate = piecesEnoughToCheckmate();
+
+    playGameSound();
+}
+
+void Board::resetBoard()
+{
+    for (int row = 0; row < 8; row++) 
+    {
+        for (int col = 0; col < 8; col++) 
+        {
+            board[row][col] = nullptr;
+        }
+    }
+}
+
+void Board::resetGame()
+{   
+    resetBoard();
+
+    soundManager.stopAllSounds();
+
+    rounds = 0;
+    roundEnPassant = 0;
+    promotionActive = false;
+    hasEnPassantMade = false;
+    soundPlayed = false;
+    isPawnGetPromotion = false;
+    soundPlayed = false;
+    isPawnGetPromotion = false;
+    isMoveCorrect = false;
+    isWhiteTurn = true;
+    selectedPiece = nullptr;
+    selectedPieceOriginalPos = {INT_MAX, INT_MAX};
+    lastRoundIndex = 0;
+    newRow = INT_MAX;
+    newCol = INT_MAX;
+    isPieceSelected = false;
+    previousRow = INT_MAX;
+    previousCol = INT_MAX;
+    nextRow = INT_MAX;
+    nextCol = INT_MAX;
+    clickCount = -1;
+    whiteHasMoves = true;
+    blackHasMoves = true;
+    isPieceCaptured = false;
+    isWhiteKingChecked = false;
+    isBlackKingChecked = false;
+    tempPiece = nullptr;
+    isCheckMate = false;
+    isStaleMate = false;
+    checkRound = 0;
+    previousRowForMovingPos = previousColForMovingPos = INT_MAX;
+    newRowForMovingPos = newColForMovingPos = INT_MAX;
+    lastRoundDraw = 0;
+    isDraw = false;
+    gamePositions.clear();
+    isBoardPosThreeTime = false;
+    isPiecesEnoughToCheckmate = false;
+
+    setupBoard();
 }
 
 sf::Vector2i Board::getBoardPositionFromMouse(int mouseX, int mouseY)
@@ -242,8 +300,6 @@ void Board::draw(sf::RenderWindow& window)
 {   
     window.draw(boardSprite);
 
-    drawTextOnChessboard(window);
-
     if (selectedPiece || clickCount % 2 == 1) 
     {
         drawSelectedPiecePlace(window);
@@ -255,6 +311,8 @@ void Board::draw(sf::RenderWindow& window)
     {
         drawKingChecked(window, kingsPositions);
     }
+
+    drawTextOnChessboard(window);
 
     float offset = newHeight / 8.0f;
     float posX, posY;
@@ -818,7 +876,7 @@ void Board::clickOnPiece(sf::Vector2i mousePos)
 
 void Board::handleMouseClick(sf::RenderWindow& window)
 {
-    if (isCheckMate || isStaleMate)
+    if (isCheckMate || isStaleMate || isDraw)
     {
         return;
     }
@@ -840,10 +898,12 @@ void Board::handleMouseClick(sf::RenderWindow& window)
             if (promotionPiece != Piece::Type::None)
             {    
                 isPawnGetPromotion = true;
-                rounds++;
+                isMoveCorrect = true;
             }
 
             promotePawn(promotionPiece);
+            rounds++;
+            addGamePosition();
             promotionActive = false;
         }
         return;
@@ -872,7 +932,6 @@ void Board::handleMouseMove(sf::Vector2i mousePos)
 {   
     if (selectedPiece && !isCheckMate) 
     {
-        isDragging = true;
         selectedPiece->setPosition(mousePos.x - (newHeight / 16.0f), mousePos.y - (newHeight/ 16.0f)); 
     }
 }
@@ -924,11 +983,6 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
             isPieceSelected = false;
             clickCount = 0;
         }
-        if (isDragging && (newRow != selectedPieceOriginalPos.y || newCol != selectedPieceOriginalPos.x))
-        {
-            isPieceSelected = false;
-            clickCount = 0;
-        }
     }
 
     if (board[newRow][newCol] && board[newRow][newCol]->getType() == Piece::Type::Pawn)
@@ -943,6 +997,11 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
         {   
             promotionActive = true;
         }
+    }
+
+    if (isMoveCorrect && !(board[newRow][newCol]->getType() == Piece::Type::Pawn && (newRow == 0 || newRow == 7)))
+    {
+        addGamePosition();
     }
 
     if (isMoveCorrect)
@@ -965,15 +1024,21 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
 
     areAnyMovesAvailable();
 
+    if (isMoveCorrect && (isPieceCaptured || board[newRow][newCol]->getType() == Piece::Type::Pawn))
+    {
+        lastRoundDraw = rounds; 
+    }    
+
     if ((isPawnGetPromotion || isMoveCorrect) && !isCheckMate && !promotionActive)
     {  
         soundManager.stopAllSounds();
         playGameSound();
     }
 
+    isBoardRepeatedThreeTimes();
+    isPiecesEnoughToCheckmate = piecesEnoughToCheckmate();
+
     isPawnGetPromotion = false;
-    
-    isDragging = false;
 }
 
 std::pair<float, float> Board::getTempPos(const sf::Vector2i& mousePos)
@@ -1006,6 +1071,7 @@ bool Board::checkIsMoveCorrect(int newRow, int newCol)
     if (newRow == previousRow && newCol == previousCol)
     {
         isMoveCorrect = false;
+        return isMoveCorrect;
     }
     else if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
@@ -1032,8 +1098,11 @@ bool Board::checkIsMoveCorrect(int newRow, int newCol)
                 }
             } 
             else 
-            {
-                isMoveCorrect = true;
+            {   
+                if (!(board[newRow][newCol]->getType() == Piece::Type::Pawn && (newRow == 0 || newRow == 7)))
+                {
+                    isMoveCorrect = true;
+                }
                 changeSquarePixels();
             }
         }
@@ -1124,37 +1193,216 @@ bool Board::canCastle(int row, int kingCol, int targetCol, Piece::Color kingColo
 }
 
 void Board::playGameSound() 
-{  
-    if (rounds > 0)
+{   
+    if ((!isWhiteTurn && !blackHasMoves && isBlackKingChecked) || (isWhiteTurn && !whiteHasMoves && isWhiteKingChecked))
+    {
+        soundManager.playSoundOnce("checkmate");
+        isCheckMate = true;
+        soundPlayed = true; 
+    }
+    else if (isWhiteKingChecked || isBlackKingChecked)
+    {
+        soundManager.playSoundOnce("check");
+        soundPlayed = true;
+    }
+    else if (isPieceCaptured)
+    {
+        soundManager.playSoundOnce("capture");
+        soundPlayed = true;
+    }
+    else if ((isWhiteTurn && !whiteHasMoves) || (!isWhiteTurn && !blackHasMoves))
+    {
+        soundManager.playSoundOnce("stalemate");
+        isStaleMate = true;
+        soundPlayed = true;
+    }
+    else if (lastRoundDraw - rounds == 100 || isBoardPosThreeTime || isPiecesEnoughToCheckmate)
     {   
-        if ((!isWhiteTurn && !blackHasMoves && isBlackKingChecked) || (isWhiteTurn && !whiteHasMoves && isWhiteKingChecked))
+        soundManager.playSoundOnce("draw");
+        isDraw = true;
+        soundPlayed = true;
+    }
+    else if (!isPieceCaptured && rounds > 0)
+    {   
+        soundManager.playSoundOnce("move");
+        soundPlayed = true;
+    }
+}
+
+void Board::addGamePosition()
+{   
+    std::string currentBoard = ""; 
+    Piece::Type pieceType;
+    Piece::Color colorPiece;
+
+    for (size_t i = 0; i < 8; i++) 
+    {
+        for (size_t j = 0; j < 8; j++) 
         {
-            soundManager.playSoundOnce("checkmate");
-            isCheckMate = true;
-            soundPlayed = true; 
-        }
-        else if (isWhiteKingChecked || isBlackKingChecked)
-        {
-            soundManager.playSoundOnce("check");
-            soundPlayed = true;
-        }
-        else if (isPieceCaptured)
-        {
-            soundManager.playSoundOnce("capture");
-            soundPlayed = true;
-        }
-        else if ((isWhiteTurn && !whiteHasMoves) || (!isWhiteTurn && !blackHasMoves))
-        {
-            soundManager.playSoundOnce("stalemate");
-            isStaleMate = true;
-            soundPlayed = true;
-        }
-        else if (!isPieceCaptured)
-        {   
-            soundManager.playSoundOnce("move");
-            soundPlayed = true;
+            if (board[i][j])
+            {
+                pieceType = board[i][j]->getType();
+                colorPiece = board[i][j]->getColor();
+
+                if (pieceType == Piece::Type::Pawn) 
+                {
+                    currentBoard += (colorPiece == Piece::Color::White) ? 'P' : 'p';
+                } 
+                else if (pieceType == Piece::Type::King) 
+                {
+                    currentBoard += (colorPiece == Piece::Color::White) ? 'K' : 'k';
+                } 
+                else if (pieceType == Piece::Type::Queen) 
+                {
+                    currentBoard += (colorPiece == Piece::Color::White) ? 'Q' : 'q';
+                } 
+                else if (pieceType == Piece::Type::Rook) 
+                {
+                    currentBoard += (colorPiece == Piece::Color::White) ? 'R' : 'r';
+                } 
+                else if (pieceType == Piece::Type::Bishop) 
+                {
+                    currentBoard += (colorPiece == Piece::Color::White) ? 'B' : 'b';
+                } 
+                else if (pieceType == Piece::Type::Knight)
+                {
+                    currentBoard += (colorPiece == Piece::Color::White) ? 'N' : 'n';
+                }
+            }
+            else
+            {
+                currentBoard += ' '; 
+            }
         }
     }
+
+    gamePositions.push_back(currentBoard); 
+}
+
+bool Board::isBoardRepeatedThreeTimes() 
+{
+    std::unordered_map<std::string, int> boardCount;
+
+    for (const auto& board : gamePositions) 
+    {
+        boardCount[board]++;
+    }
+
+    for (const auto& entry : boardCount) 
+    {
+        if (entry.second >= 3) 
+        {
+            return true; 
+        }
+    }
+
+    return false;  
+}
+
+bool Board::piecesEnoughToCheckmate() 
+{
+    if (gamePositions.empty()) 
+    {
+        return false;
+    }
+
+    const std::string& board = gamePositions.back(); 
+
+    int kingCount = 0;
+    int knightCount = 0;
+    int whiteBishopCount = 0;
+    int blackBishopCount = 0;
+    int whiteBishopOnWhite = 0;
+    int whiteBishopOnBlack = 0;
+    int blackBishopOnWhite = 0;
+    int blackBishopOnBlack = 0;
+    int queenCount = 0;
+    int rookCount = 0;
+    int pawnCount = 0;
+
+    for (int i = 0; i < board.size(); ++i)
+    {
+        char piece = board[i];
+
+        int row = i / 8;
+        int col = i % 8;
+
+        bool isBlackSquare = (row + col) % 2 == 0;
+
+        switch (piece) 
+        {
+            case 'K':
+            case 'k':
+                kingCount++;
+                break;
+
+            case 'N':
+            case 'n':
+                knightCount++;
+                break;
+
+            case 'B':
+                whiteBishopCount++;
+                if (isBlackSquare)
+                    whiteBishopOnBlack++;
+                else
+                    whiteBishopOnWhite++;
+                break;
+
+            case 'b':
+                blackBishopCount++;
+                if (isBlackSquare)
+                    blackBishopOnBlack++;
+                else
+                    blackBishopOnWhite++;
+                break;
+
+            case 'Q':
+            case 'q':
+                queenCount++;
+                break;
+
+            case 'R':
+            case 'r':
+                rookCount++;
+                break;
+
+            case 'P':
+            case 'p':
+                pawnCount++;
+                break;
+
+            case ' ':  
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    if (kingCount == 2 && knightCount == 0 && whiteBishopCount == 0 && blackBishopCount == 0 && queenCount == 0 && rookCount == 0 && pawnCount == 0)
+    {
+        return true;
+    }
+
+    if (kingCount == 2 && knightCount == 1 && whiteBishopCount == 0 && blackBishopCount == 0 && queenCount == 0 && rookCount == 0 && pawnCount == 0)
+    {
+        return true;
+    }
+
+    if (kingCount == 2 && knightCount == 0 && (whiteBishopOnBlack != 0 || blackBishopOnBlack != 0) && 
+        whiteBishopOnWhite == 0 && blackBishopOnWhite == 0 && queenCount == 0 && rookCount == 0 && pawnCount == 0)
+    {
+        return true;
+    }
+
+    if (kingCount == 2 && knightCount == 0 && (whiteBishopOnWhite != 0 || blackBishopOnWhite != 0) && 
+        whiteBishopOnBlack == 0 && blackBishopOnBlack == 0 && queenCount == 0 && rookCount == 0 && pawnCount == 0)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 /*

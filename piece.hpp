@@ -9,7 +9,7 @@ class Piece
 {
 public:
     enum class Type { King, Queen, Rook, Bishop, Knight, Pawn, None};
-    enum class Color { White, Black };
+    enum class Color { White, Black, None };
 
     Piece(const sf::Texture& texture, float x, float y, Type type, Color color, Board& boardGame);
     virtual ~Piece() = default;
