@@ -16,6 +16,7 @@
 #include "knight.hpp"
 #include "rook.hpp"
 #include "soundmanager.hpp"
+#include "parser.hpp"
 
 void loadBoard(sf::Texture& boardTexture)
 {
@@ -99,7 +100,8 @@ void loadSounds(SoundManager& soundManager)
         !soundManager.loadSound("incorrect_move", "./Sounds/incorrect_move.ogg") ||
         !soundManager.loadSound("check", "./Sounds/check.ogg") ||
         !soundManager.loadSound("checkmate", "./Sounds/checkmate.ogg") ||
-        !soundManager.loadSound("stalemate", "./Sounds/stalemate.ogg"))
+        !soundManager.loadSound("stalemate", "./Sounds/stalemate.ogg") ||
+        !soundManager.loadSound("draw", "./Sounds/draw.ogg"))
     {
         std::cerr << "Failed to load sound!" << std::endl;
     }
@@ -113,6 +115,14 @@ void loadFonts(sf::Font& font)
     }
 }
 
+void loadBackground(sf::Texture& backgroundTexture)
+{
+    if (!backgroundTexture.loadFromFile("./Images/background/background.png")) 
+    {
+        std::cerr << "Failed to load background!" << std::endl;
+    }
+}
+
 int main()
 {
     sf::Vector2<unsigned int> desktopSize = sf::VideoMode::getDesktopMode().size;
@@ -120,7 +130,7 @@ int main()
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 8;
 
-    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen, settings);
+    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Windowed, settings);
     window.setVerticalSyncEnabled(true);
     //window.setFramerateLimit(165);
 
@@ -130,19 +140,32 @@ int main()
 
     SoundManager soundManager;
 
+    Parser parser;
+
     sf::Font font;
+
+    sf::Texture backgroundTexture;
 
     std::thread loadBoardThread(loadBoard, std::ref(boardTexture));
     std::thread loadPiecesThread(loadPieces, std::ref(textures));
     std::thread loadSoundsThread(loadSounds, std::ref(soundManager));    
     std::thread loadFontsThread(loadFonts, std::ref(font));
+    std::thread loadBackgroundThread(loadBackground, std::ref(backgroundTexture));
 
     loadBoardThread.join();
     loadPiecesThread.join();    
     loadSoundsThread.join();
     loadFontsThread.join();
+    loadBackgroundThread.join();
 
-    Board board(window, desktopSize, boardTexture, textures, soundManager, font);  
+    sf::Sprite backgroundSprite(backgroundTexture);
+
+    sf::Vector2u textureSize = backgroundTexture.getSize();
+    float scaleX = float(window.getSize().x) / textureSize.x;
+    float scaleY = float(window.getSize().y) / textureSize.y;
+    backgroundSprite.setScale({scaleX, scaleY});
+
+    Board board(window, desktopSize, boardTexture, textures, soundManager, font, parser);  
     Board& boardRef = board; 
 
     boardRef.setupBoard();
@@ -167,9 +190,18 @@ int main()
                 {   
                     boardRef.flipBoard();
                 }
-                if (keyPressed->scancode == sf::Keyboard::Scancode::S)
+                if (keyPressed->scancode == sf::Keyboard::Scancode::H)
                 {   
                     boardRef.showLegalMoves = !boardRef.showLegalMoves;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scancode::R)
+                {   
+                    boardRef.resetGame();
+                    parser.resetBoardPostionHistory();
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scancode::S)
+                {   
+                    parser.saveToFile();
                 }
             }
             else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) 
@@ -195,7 +227,7 @@ int main()
             }
         }
 
-        window.clear(sf::Color(128,128,128));
+        window.draw(backgroundSprite);
 
         boardRef.draw(window);
 

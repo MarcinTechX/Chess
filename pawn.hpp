@@ -11,7 +11,7 @@ class Pawn : public Piece
 public:
     Pawn(const sf::Texture& texture, float x, float y, Color color, Board& boardGame);
 
-    bool canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) override;
+    bool canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove, bool sameColor) override;
 
     int roundEnPassant = 0;
 };

@@ -14,16 +14,18 @@
 #include "queen.hpp"
 #include "king.hpp"
 #include "soundmanager.hpp"
+#include "parser.hpp"
 
 class Board 
 {
 public:
     explicit Board( sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, 
-                    sf::Texture>& textures, SoundManager& soundManager, sf::Font& font);
+                    sf::Texture>& textures, SoundManager& soundManager, sf::Font& font, Parser& parser);
     ~Board();
     bool loadShader();
     void updateBoard(sf::RenderWindow& window);
     void setupBoard();
+    void resetGame();
     sf::Vector2i getBoardPositionFromMouse(int mouseX, int mouseY);
     void draw(sf::RenderWindow& window);
     void flipBoard(); 
@@ -57,16 +59,20 @@ public:
     bool isPawnGetPromotion = false;
 
 private:
+    void resetBoard();
     void setScaleForAllPieces();
     void drawKingChecked(sf::RenderWindow& window,  std::pair<sf::Vector2i, sf::Vector2i>& kingsPositions);
     void drawTextOnChessboard(sf::RenderWindow& window);
     void drawStoreMovingPositions(sf::RenderWindow& window);
     void drawSelectedPiecePlace(sf::RenderWindow& window);
     void changeSquarePixels(); 
-    void flipBoardTexture();    
     std::tuple<Piece::Color, int, int> getPromotePawnPos();
     std::pair<sf::Vector2i, sf::Vector2i> getKingsPositions(); 
     bool isKingInCheck(int kingRow, int kingCol, Piece::Color kingColor);
+    void addGamePosition();
+    bool isBoardRepeatedThreeTimes();
+    bool piecesEnoughToCheckmate();
+    std::tuple<bool, bool, bool> attackTheSameColor(); 
     //sf::Color adjustPixel(const sf::Color& color);
 
     std::vector<std::unique_ptr<Piece>> pieces;
@@ -93,13 +99,13 @@ private:
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
     SoundManager& soundManager;
+    Parser& parser;
     int lastRoundIndex;
     int newRow, newCol;
     bool isPieceSelected = false;
     int previousRow, previousCol;
     int nextRow = -1, nextCol = -1;
     int clickCount = -1;
-    bool isDragging = false;
     std::vector<std::pair<int, int>> possibleMoves;
     std::vector<std::pair<int, int>> possibleMovesCopy;
     std::vector<std::pair<int, int>> whiteMoves;
@@ -113,13 +119,18 @@ private:
     bool isCheckMate = false;
     bool isStaleMate = false;
     int checkRound = 0;
-    bool isKingStillInCheck = false;
     std::pair<sf::Vector2i, sf::Vector2i> kingsPositions;
     std::vector<sf::RectangleShape> movingPositions;
     sf::RectangleShape r1, r2;
     int previousRowForMovingPos, previousColForMovingPos;
     int newRowForMovingPos, newColForMovingPos;
     sf::RectangleShape selectedPlace;
+    int lastRoundDraw = 0;
+    bool isDraw = false;
+    std::vector<std::string> gamePositions;
+    bool isBoardPosThreeTime = false;
+    bool isPiecesEnoughToCheckmate = false;
+    Piece::Type promotionPiece;
 };
 
 #endif

@@ -6,11 +6,9 @@ King::King(const sf::Texture& texture, float x, float y, Color color, Board& boa
 {
 }
 
-bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) 
+bool King::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove, bool sameColor) 
 {  
-    auto king = dynamic_cast<King*>(boardGame->board[startRow][startCol].get());
-
-    if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor) 
+    if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor && !sameColor) 
     {
         return false;
     }

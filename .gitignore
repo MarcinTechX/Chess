@@ -5,3 +5,4 @@ obj/*
 build/*
 local.mk
 *.local.bat
+PGNs/

@@ -17,7 +17,7 @@ class King : public Piece
 public:
     King(const sf::Texture& texture, float x, float y, Color color, Board& boardGame);
 
-    bool canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove) override;
+    bool canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove, bool sameColor) override;
 };
 
 #endif 

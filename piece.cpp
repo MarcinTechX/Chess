@@ -51,14 +51,14 @@ void Piece::setScaleFactor(float scaleFactor)
     sprite.setScale({scaleFactor, scaleFactor}); 
 }
 
-bool Piece::canMove(int startRow, int startCol, int endRow, int endCol, bool testMove) 
+bool Piece::canMove(int startRow, int startCol, int endRow, int endCol, bool testMove, bool sameColor) 
 {   
     if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) 
     {
         return false;
     }
 
-    if (canMoveImpl(startRow, startCol, endRow, endCol, testMove)) 
+    if (canMoveImpl(startRow, startCol, endRow, endCol, testMove, sameColor)) 
     {   
         if (testMove)
         {   
