@@ -948,8 +948,16 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
         return;
     }
 
-    newRow = std::max(0, std::min(7, static_cast<int>(tempRow)));
-    newCol = std::max(0, std::min(7, static_cast<int>(tempCol)));
+    if (!isPawnGetPromotion)
+    {
+        newRow = std::max(0, std::min(7, static_cast<int>(tempRow)));
+        newCol = std::max(0, std::min(7, static_cast<int>(tempCol)));
+    }
+    else
+    {
+        newRow = newRow;
+        newCol = newCol;
+    }
 
     isMoveCorrect = false;
     hasEnPassantMade = false;
@@ -957,6 +965,8 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
     isWhiteKingChecked = false;
     isBlackKingChecked = false;
     soundPlayed = false;
+
+    tempPiece = nullptr;
 
     if (!selectedPiece && clickCount % 2 == 1) 
     {
@@ -1035,7 +1045,7 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
         playGameSound();
     }
 
-    isBoardRepeatedThreeTimes();
+    isBoardPosThreeTime = isBoardRepeatedThreeTimes();
     isPiecesEnoughToCheckmate = piecesEnoughToCheckmate();
 
     isPawnGetPromotion = false;
