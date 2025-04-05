@@ -14,12 +14,13 @@
 #include "queen.hpp"
 #include "king.hpp"
 #include "soundmanager.hpp"
+#include "parser.hpp"
 
 class Board 
 {
 public:
     explicit Board( sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, 
-                    sf::Texture>& textures, SoundManager& soundManager, sf::Font& font);
+                    sf::Texture>& textures, SoundManager& soundManager, sf::Font& font, Parser& parser);
     ~Board();
     bool loadShader();
     void updateBoard(sf::RenderWindow& window);
@@ -71,6 +72,7 @@ private:
     void addGamePosition();
     bool isBoardRepeatedThreeTimes();
     bool piecesEnoughToCheckmate();
+    std::tuple<bool, bool, bool> attackTheSameColor(); 
     //sf::Color adjustPixel(const sf::Color& color);
 
     std::vector<std::unique_ptr<Piece>> pieces;
@@ -97,6 +99,7 @@ private:
     std::unique_ptr<Piece> selectedPiece;
     sf::Vector2i selectedPieceOriginalPos;
     SoundManager& soundManager;
+    Parser& parser;
     int lastRoundIndex;
     int newRow, newCol;
     bool isPieceSelected = false;
@@ -127,6 +130,7 @@ private:
     std::vector<std::string> gamePositions;
     bool isBoardPosThreeTime = false;
     bool isPiecesEnoughToCheckmate = false;
+    Piece::Type promotionPiece;
 };
 
 #endif

@@ -14,9 +14,9 @@ public:
     Piece(const sf::Texture& texture, float x, float y, Type type, Color color, Board& boardGame);
     virtual ~Piece() = default;
 
-    bool canMove(int startRow, int startCol, int endRow, int endCol, bool testMove);
+    bool canMove(int startRow, int startCol, int endRow, int endCol, bool testMove, bool sameColor);
 
-    virtual bool canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testedMove) = 0;
+    virtual bool canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testedMove, bool sameColor) = 0;
 
     virtual void draw(sf::RenderWindow& window);
 

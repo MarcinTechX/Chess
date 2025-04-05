@@ -16,6 +16,7 @@
 #include "knight.hpp"
 #include "rook.hpp"
 #include "soundmanager.hpp"
+#include "parser.hpp"
 
 void loadBoard(sf::Texture& boardTexture)
 {
@@ -129,7 +130,7 @@ int main()
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 8;
 
-    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen, settings);
+    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Windowed, settings);
     window.setVerticalSyncEnabled(true);
     //window.setFramerateLimit(165);
 
@@ -138,6 +139,8 @@ int main()
     std::map<std::string, sf::Texture> textures;
 
     SoundManager soundManager;
+
+    Parser parser;
 
     sf::Font font;
 
@@ -162,7 +165,7 @@ int main()
     float scaleY = float(window.getSize().y) / textureSize.y;
     backgroundSprite.setScale({scaleX, scaleY});
 
-    Board board(window, desktopSize, boardTexture, textures, soundManager, font);  
+    Board board(window, desktopSize, boardTexture, textures, soundManager, font, parser);  
     Board& boardRef = board; 
 
     boardRef.setupBoard();
@@ -187,13 +190,18 @@ int main()
                 {   
                     boardRef.flipBoard();
                 }
-                if (keyPressed->scancode == sf::Keyboard::Scancode::S)
+                if (keyPressed->scancode == sf::Keyboard::Scancode::H)
                 {   
                     boardRef.showLegalMoves = !boardRef.showLegalMoves;
                 }
                 if (keyPressed->scancode == sf::Keyboard::Scancode::R)
                 {   
                     boardRef.resetGame();
+                    parser.resetBoardPostionHistory();
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scancode::S)
+                {   
+                    parser.saveToFile();
                 }
             }
             else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) 

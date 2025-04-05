@@ -17,8 +17,8 @@
 #include "colorconverter.hpp"
 
 Board::Board(sf::RenderWindow& window, sf::Vector2<unsigned int> desktopSize, sf::Texture& boardTexture, std::map<std::string, sf::Texture>& textures, 
-    SoundManager& soundManager, sf::Font& font)
-    : isWhiteTurn(true), boardSprite(boardTexture), desktopSize(desktopSize), soundManager(soundManager), textures(textures), font(font),
+    SoundManager& soundManager, sf::Font& font, Parser& parser)
+    : isWhiteTurn(true), boardSprite(boardTexture), desktopSize(desktopSize), soundManager(soundManager), textures(textures), font(font), parser(parser),
     isFlipped(false), lastWindowSize({0,0}), promotionActive(false), rounds(0), roundEnPassant(0), 
     isMoveCorrect(false), hasEnPassantMade(false), showLegalMoves(false)
 {
@@ -99,7 +99,7 @@ void Board::setScaleForAllPieces()
 }
 
 void Board::setupBoard() 
-{    
+{   
     board[0][0] = std::make_unique<Rook>(textures.at("white-rook"), 0, 0, Piece::Color::White, *this);
     board[0][1] = std::make_unique<Knight>(textures.at("white-knight"), 1, 0, Piece::Color::White, *this);
     board[0][2] = std::make_unique<Bishop>(textures.at("white-bishop"), 2, 0, Piece::Color::White, *this);
@@ -127,6 +127,7 @@ void Board::setupBoard()
     {
        board[6][col] = std::make_unique<Pawn>(textures.at("black-pawn"), col, 6, Piece::Color::Black, *this);
     }
+    
 
     setScaleForAllPieces();
 
@@ -190,6 +191,7 @@ void Board::resetGame()
     gamePositions.clear();
     isBoardPosThreeTime = false;
     isPiecesEnoughToCheckmate = false;
+    promotionPiece = Piece::Type::None;
 
     setupBoard();
 }
@@ -548,7 +550,7 @@ std::vector<std::pair<int, int>> Board::getPossibleMovesForPiece(int row, int co
     {
         for (int c = 0; c < 8; c++)
         {
-            if (originalPiece->canMove(row, col, r, c, true)) 
+            if (originalPiece->canMove(row, col, r, c, true, false)) 
             {  
                 std::unique_ptr<Piece> tempPiece = std::move(board[r][c]);
                 board[r][c] = std::move(board[row][col]);
@@ -590,7 +592,7 @@ std::vector<std::pair<int, int>> Board::getPossibleMovesForPieceCopy(int row, in
     {
         for (int c = 0; c < 8; c++)
         {
-            if (originalPiece->canMove(row, col, r, c, true)) 
+            if (originalPiece->canMove(row, col, r, c, true, false)) 
             {  
                 std::unique_ptr<Piece> tempPiece = std::move(board[r][c]);
                 board[r][c] = std::move(board[row][col]);
@@ -888,7 +890,6 @@ void Board::handleMouseClick(sf::RenderWindow& window)
     {
         if (isMouseInPromotionWindow(window))
         {
-            Piece::Type promotionPiece;
             do 
             {
                 promotionPiece = getPromotionPiece(sf::Mouse::getPosition(window));
@@ -961,10 +962,14 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
 
     isMoveCorrect = false;
     hasEnPassantMade = false;
-    isPieceCaptured = false;
     isWhiteKingChecked = false;
     isBlackKingChecked = false;
     soundPlayed = false;
+
+    if (!isPawnGetPromotion)
+    {
+        isPieceCaptured = false;
+    }
 
     tempPiece = nullptr;
 
@@ -982,7 +987,14 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
         checkIsMoveCorrect(newRow, newCol);
     }
 
-    isPieceCaptured = (tempPiece != nullptr) || hasEnPassantMade;
+    if (!isPawnGetPromotion)
+    {
+        isPieceCaptured = (tempPiece != nullptr) || hasEnPassantMade;
+    }
+    else
+    {
+        isPieceCaptured = isPieceCaptured;
+    }
     
     if (!isMoveCorrect && selectedPiece) 
     {   
@@ -1043,11 +1055,83 @@ void Board::handleMouseRelease(sf::Vector2i mousePos)
     {  
         soundManager.stopAllSounds();
         playGameSound();
+
+        std::tuple<bool, bool, bool> result = attackTheSameColor();
+
+        auto [theSameRow, theSameCol, canAttack] = result;
+
+        char pieceType;
+
+        if (!isPawnGetPromotion)
+        {
+            if (board[newRow][newCol]->getType() == Piece::Type::Queen)
+            {
+                pieceType = 'Q';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::King)
+            {
+                pieceType = 'K';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Rook)
+            {
+                pieceType = 'R';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Bishop)
+            {
+                pieceType = 'B';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Knight)
+            {
+                pieceType = 'N';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Pawn)
+            {
+                pieceType = 'P';
+            }
+        }
+        else 
+        {
+            pieceType = ' ';
+        }
+
+        bool isKingCheck = isWhiteKingChecked || isBlackKingChecked;
+
+        bool isDrawOrStalemate = isDraw || isStaleMate;
+
+        char promotionPiece;
+
+        if (isPawnGetPromotion)
+        {
+            if (board[newRow][newCol]->getType() == Piece::Type::Queen)
+            {
+                promotionPiece = 'Q';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Rook)
+            {
+                promotionPiece = 'R';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Bishop)
+            {
+                promotionPiece = 'B';
+            }
+            if (board[newRow][newCol]->getType() == Piece::Type::Knight)
+            {
+                promotionPiece = 'N';
+            }
+        }
+        else 
+        {
+            promotionPiece = ' ';
+        }
+
+        parser.addBoardPosition(rounds, previousRow, previousCol, newRow, newCol, pieceType, isKingCheck, isDrawOrStalemate, isCheckMate,
+                                promotionPiece, theSameRow, theSameCol, canAttack, isPieceCaptured);
     }
 
     isBoardPosThreeTime = isBoardRepeatedThreeTimes();
     isPiecesEnoughToCheckmate = piecesEnoughToCheckmate();
 
+    promotionPiece = Piece::Type::None;
     isPawnGetPromotion = false;
 }
 
@@ -1076,8 +1160,6 @@ bool Board::isPosOnCheckboard(float tempRow, float tempCol)
 
 bool Board::checkIsMoveCorrect(int newRow, int newCol)
 {
-    tempPiece;
-
     if (newRow == previousRow && newCol == previousCol)
     {
         isMoveCorrect = false;
@@ -1085,7 +1167,7 @@ bool Board::checkIsMoveCorrect(int newRow, int newCol)
     }
     else if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) 
     {   
-        if (selectedPiece->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, false)) 
+        if (selectedPiece->canMove(selectedPieceOriginalPos.y, selectedPieceOriginalPos.x, newRow, newCol, false, false)) 
         {  
             tempPiece = std::move(board[newRow][newCol]);
             board[newRow][newCol] = std::move(selectedPiece);
@@ -1160,7 +1242,7 @@ bool Board::isKingInCheck(int row, int col, Piece::Color kingColor)
             {
                 if (piece->getColor() != kingColor) 
                 {
-                    if (piece->canMove(r, c, row, col, true)) 
+                    if (piece->canMove(r, c, row, col, true, false)) 
                     {
                         return true; 
                     }
@@ -1414,6 +1496,63 @@ bool Board::piecesEnoughToCheckmate()
 
     return false;
 }
+
+std::tuple<bool, bool, bool> Board::attackTheSameColor() 
+{   
+    std::cout << "start" <<std::endl;
+
+    bool theSameRow = false;
+    bool theSameCol = false;
+    bool canAttack = false;
+
+    for (int r = 0; r < 8; r++)
+    {
+        for (int c = 0; c < 8; c++)
+        {   
+            if (!(r == newRow && c == newCol))
+            {
+                if (board[r][c] && board[r][c]->getType() == board[newRow][newCol]->getType())
+                {   
+                    if (board[r][c]->getColor() == board[newRow][newCol]->getColor()) 
+                    {
+                        if (board[r][c]->canMove(r, c, newRow, newCol, true, true)) 
+                        {  
+                            std::unique_ptr<Piece> tempPiece = std::move(board[r][c]);
+                            board[r][c] = nullptr;
+
+                            auto kingsPositions = getKingsPositions();
+                            sf::Vector2i whiteKingPos = kingsPositions.first;
+                            sf::Vector2i blackKingPos = kingsPositions.second;
+
+                            bool isWhiteKingChecked = isKingInCheck(whiteKingPos.y, whiteKingPos.x, Piece::Color::White);
+                            bool isBlackKingChecked = isKingInCheck(blackKingPos.y, blackKingPos.x, Piece::Color::Black);
+
+                            if (!((isWhiteTurn && isWhiteKingChecked) || (!isWhiteTurn && isBlackKingChecked))) 
+                            {
+                                if (r == previousRow)
+                                {
+                                    theSameRow = true;
+                                }
+                                if (c == previousCol)
+                                {
+                                    theSameCol = true;
+                                }
+
+                                canAttack = true;
+
+                                std::cout << "XD" << std::endl;
+                            }   
+                            board[r][c] = std::move(tempPiece);
+                        }
+                    }
+                } 
+            }
+        }
+    }
+
+    return {theSameRow, theSameCol, canAttack}; 
+}
+
 
 /*
 sf::Color Board::adjustPixel(const sf::Color& color) 

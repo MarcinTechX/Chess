@@ -9,14 +9,11 @@ Bishop::Bishop(const sf::Texture& texture, float x, float y, Color color, Board&
         this->boardGame = &boardGame;
     }
 
-bool Bishop::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove)
+bool Bishop::canMoveImpl(int startRow, int startCol, int endRow, int endCol, bool testMove, bool sameColor)
 {
-    if (boardGame->board[endRow][endCol] != nullptr) 
-    {    
-        if (boardGame->board[endRow][endCol]->getColor() == pieceColor) 
-        {
-            return false;
-        }
+    if (boardGame->board[endRow][endCol] && boardGame->board[endRow][endCol]->getColor() == pieceColor && !sameColor) 
+    {
+        return false;
     }
 
     if (abs(endRow - startRow) == abs(endCol - startCol))
