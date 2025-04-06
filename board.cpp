@@ -1499,8 +1499,6 @@ bool Board::piecesEnoughToCheckmate()
 
 std::tuple<bool, bool, bool> Board::attackTheSameColor() 
 {   
-    std::cout << "start" <<std::endl;
-
     bool theSameRow = false;
     bool theSameCol = false;
     bool canAttack = false;
@@ -1539,8 +1537,6 @@ std::tuple<bool, bool, bool> Board::attackTheSameColor()
                                 }
 
                                 canAttack = true;
-
-                                std::cout << "XD" << std::endl;
                             }   
                             board[r][c] = std::move(tempPiece);
                         }

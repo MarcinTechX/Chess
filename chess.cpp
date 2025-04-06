@@ -130,7 +130,7 @@ int main()
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 8;
 
-    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Windowed, settings);
+    sf::RenderWindow window(sf::VideoMode({desktopSize.x, desktopSize.y}), "Chess", sf::Style::Default, sf::State::Fullscreen, settings);
     window.setVerticalSyncEnabled(true);
     //window.setFramerateLimit(165);
 
@@ -146,17 +146,23 @@ int main()
 
     sf::Texture backgroundTexture;
 
-    std::thread loadBoardThread(loadBoard, std::ref(boardTexture));
-    std::thread loadPiecesThread(loadPieces, std::ref(textures));
-    std::thread loadSoundsThread(loadSounds, std::ref(soundManager));    
-    std::thread loadFontsThread(loadFonts, std::ref(font));
-    std::thread loadBackgroundThread(loadBackground, std::ref(backgroundTexture));
+    //std::thread loadBoardThread(loadBoard, std::ref(boardTexture));
+    //std::thread loadPiecesThread(loadPieces, std::ref(textures));
+    //std::thread loadSoundsThread(loadSounds, std::ref(soundManager));    
+    //std::thread loadFontsThread(loadFonts, std::ref(font));
+    //std::thread loadBackgroundThread(loadBackground, std::ref(backgroundTexture));
 
-    loadBoardThread.join();
-    loadPiecesThread.join();    
-    loadSoundsThread.join();
-    loadFontsThread.join();
-    loadBackgroundThread.join();
+    //loadBoardThread.join();
+    //loadPiecesThread.join();    
+    //loadSoundsThread.join();
+    //loadFontsThread.join();
+    //loadBackgroundThread.join();
+
+    loadBoard(boardTexture);
+    loadPieces(textures);
+    loadFonts(font);
+    loadSounds(soundManager);
+    loadBackground(backgroundTexture);
 
     sf::Sprite backgroundSprite(backgroundTexture);
 

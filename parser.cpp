@@ -18,19 +18,6 @@ void Parser::addBoardPosition(  int rounds, int rowFrom, int colFrom, int rowTo,
         canPieceAttackFromRow, canPieceAttackFromCol, canAttack, isPieceCaptured
     };
 
-    std::cout << "Rounds: " << newPosition.rounds << std::endl;
-    std::cout << "From: (" << newPosition.rowFrom << ", " << newPosition.colFrom << ")" << std::endl;
-    std::cout << "To: (" << newPosition.rowTo << ", " << newPosition.colTo << ")" << std::endl;
-    std::cout << "Piece Type: " << newPosition.pieceType << std::endl;
-    std::cout << "King Checked: " << newPosition.isKingChecked << std::endl;
-    std::cout << "Draw or Stalemate: " << newPosition.isDrawOrStalemate << std::endl;
-    std::cout << "Checkmate: " << newPosition.isCheckmate << std::endl;
-    std::cout << "Promotion Piece: " << newPosition.promotionPiece << std::endl;
-    std::cout << "Can Piece Attack From Row: " << newPosition.canPieceAttackFromRow << std::endl;
-    std::cout << "Can Piece Attack From Col: " << newPosition.canPieceAttackFromCol << std::endl;
-    std::cout << "Can Attack: " << newPosition.canAttack << std::endl;
-    std::cout << "Piece captured: " << isPieceCaptured << std::endl; 
-
     boardPositionHistory.push_back(newPosition);
 }
 
@@ -167,5 +154,4 @@ void Parser::generatePGN()
 void Parser::resetBoardPostionHistory()
 {
     boardPositionHistory.clear();
-    boardPositionHistory.shrink_to_fit();
 }
